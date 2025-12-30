@@ -4,6 +4,7 @@ import { es } from 'date-fns/locale';
 import { FichaTecnica, Cliente, RepuestoFicha, Tecnico } from '@/types';
 import { getClientes, saveCliente, saveFicha, generateId, getNextNumero, incrementContador, getModelos, saveModelo } from '@/lib/storage';
 import { generateWordDocument } from '@/lib/generateWord';
+import { generatePdfDocument, printFicha } from '@/lib/generatePdf';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import RepuestosSelector from '@/components/RepuestosSelector';
 import ServiciosTable, { DEFAULT_SERVICIOS } from '@/components/ServiciosTable';
-import { CalendarIcon, FileText, Save, User, Wrench } from 'lucide-react';
+import { CalendarIcon, FileText, Save, User, Wrench, FileDown, Printer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const FichaTecnicaPage = () => {
@@ -24,6 +25,7 @@ const FichaTecnicaPage = () => {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [modelos, setModelos] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [exportType, setExportType] = useState<'word' | 'pdf' | 'print'>('word');
 
   // Form state
   const [numeroBoleta, setNumeroBoleta] = useState('');
@@ -68,7 +70,7 @@ const FichaTecnicaPage = () => {
     setModeloMaquina(modelo);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (type: 'word' | 'pdf' | 'print') => {
     if (!numeroBoleta.trim()) {
       toast({ title: 'Error', description: 'El número de boleta es requerido', variant: 'destructive' });
       return;
@@ -83,6 +85,7 @@ const FichaTecnicaPage = () => {
     }
 
     setIsLoading(true);
+    setExportType(type);
 
     try {
       // Save cliente
@@ -118,10 +121,17 @@ const FichaTecnicaPage = () => {
 
       saveFicha(ficha);
 
-      // Generate Word document
-      await generateWordDocument(ficha);
-
-      toast({ title: 'Éxito', description: 'Ficha técnica guardada y documento generado' });
+      // Generate document based on type
+      if (type === 'word') {
+        await generateWordDocument(ficha);
+        toast({ title: 'Éxito', description: 'Ficha guardada y documento Word generado' });
+      } else if (type === 'pdf') {
+        await generatePdfDocument(ficha);
+        toast({ title: 'Éxito', description: 'Ficha guardada y PDF generado' });
+      } else {
+        printFicha(ficha);
+        toast({ title: 'Éxito', description: 'Ficha guardada y enviada a impresión' });
+      }
 
       // Reset form
       setNumeroBoleta('');
@@ -405,16 +415,40 @@ const FichaTecnicaPage = () => {
             </p>
           </section>
 
-          {/* Submit */}
-          <Button
-            onClick={handleSubmit}
-            disabled={isLoading}
-            size="lg"
-            className="w-full md:w-auto md:self-end animate-fade-in hover-lift"
-          >
-            <Save className="mr-2 h-5 w-5" />
-            {isLoading ? 'Generando...' : 'Guardar y Generar Documento Word'}
-          </Button>
+          {/* Submit Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3 animate-fade-in">
+            <Button
+              onClick={() => handleSubmit('word')}
+              disabled={isLoading}
+              size="lg"
+              className="flex-1 hover-lift"
+            >
+              <Save className="mr-2 h-5 w-5" />
+              {isLoading && exportType === 'word' ? 'Generando...' : 'Guardar y Word'}
+            </Button>
+            
+            <Button
+              onClick={() => handleSubmit('pdf')}
+              disabled={isLoading}
+              size="lg"
+              variant="secondary"
+              className="flex-1 hover-lift"
+            >
+              <FileDown className="mr-2 h-5 w-5" />
+              {isLoading && exportType === 'pdf' ? 'Generando...' : 'Guardar y PDF'}
+            </Button>
+            
+            <Button
+              onClick={() => handleSubmit('print')}
+              disabled={isLoading}
+              size="lg"
+              variant="outline"
+              className="flex-1 hover-lift"
+            >
+              <Printer className="mr-2 h-5 w-5" />
+              {isLoading && exportType === 'print' ? 'Imprimiendo...' : 'Guardar e Imprimir'}
+            </Button>
+          </div>
         </div>
       </main>
     </div>

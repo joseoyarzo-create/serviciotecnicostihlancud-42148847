@@ -3,13 +3,20 @@ import { Link } from 'react-router-dom';
 import { FichaTecnica } from '@/types';
 import { getFichas, getRepuestos, getClientes, deleteFicha } from '@/lib/storage';
 import { generateWordDocument } from '@/lib/generateWord';
+import { generatePdfDocument, printFicha } from '@/lib/generatePdf';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
-import { FileText, Package, Users, Wrench, Plus, Download, Trash2, Clock } from 'lucide-react';
+import { FileText, Package, Users, Wrench, Plus, Download, Trash2, Clock, FileDown, Printer } from 'lucide-react';
 import stihlLogo from '@/assets/stihl-logo.jpg';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const Index = () => {
   const { toast } = useToast();
@@ -22,7 +29,7 @@ const Index = () => {
 
   const loadData = () => {
     const allFichas = getFichas();
-    setFichas(allFichas.slice(-5).reverse()); // Last 5 fichas
+    setFichas(allFichas.slice(-5).reverse());
     setStats({
       repuestos: getRepuestos().length,
       clientes: getClientes().length,
@@ -30,12 +37,30 @@ const Index = () => {
     });
   };
 
-  const handleDownload = async (ficha: FichaTecnica) => {
+  const handleDownloadWord = async (ficha: FichaTecnica) => {
     try {
       await generateWordDocument(ficha);
-      toast({ title: 'Éxito', description: 'Documento descargado' });
+      toast({ title: 'Éxito', description: 'Documento Word descargado' });
     } catch (error) {
       toast({ title: 'Error', description: 'Error al generar documento', variant: 'destructive' });
+    }
+  };
+
+  const handleDownloadPdf = async (ficha: FichaTecnica) => {
+    try {
+      await generatePdfDocument(ficha);
+      toast({ title: 'Éxito', description: 'PDF descargado' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Error al generar PDF', variant: 'destructive' });
+    }
+  };
+
+  const handlePrint = (ficha: FichaTecnica) => {
+    try {
+      printFicha(ficha);
+      toast({ title: 'Éxito', description: 'Enviado a impresión' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Error al imprimir', variant: 'destructive' });
     }
   };
 
@@ -166,13 +191,27 @@ const Index = () => {
                       <td>{ficha.tecnico}</td>
                       <td>
                         <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDownload(ficha)}
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="sm" variant="outline">
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleDownloadWord(ficha)}>
+                                <FileText className="mr-2 h-4 w-4" />
+                                Descargar Word
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDownloadPdf(ficha)}>
+                                <FileDown className="mr-2 h-4 w-4" />
+                                Descargar PDF
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handlePrint(ficha)}>
+                                <Printer className="mr-2 h-4 w-4" />
+                                Imprimir
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                           <Button
                             size="sm"
                             variant="destructive"
