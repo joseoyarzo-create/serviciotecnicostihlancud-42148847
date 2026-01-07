@@ -8,11 +8,10 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -20,23 +19,17 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = isSignUp 
-      ? await signUp(email, password)
-      : await signIn(email, password);
+    // Convert username to email format for Supabase auth
+    const email = `${username.toLowerCase().trim()}@taller.local`;
+    const { error } = await signIn(email, password);
 
     if (error) {
       toast({
         title: 'Error',
-        description: error.message,
+        description: 'Usuario o contraseña incorrectos',
         variant: 'destructive',
       });
     } else {
-      if (isSignUp) {
-        toast({
-          title: 'Cuenta creada',
-          description: 'Tu cuenta ha sido creada exitosamente.',
-        });
-      }
       navigate('/');
     }
 
@@ -51,19 +44,19 @@ const Login = () => {
             Sistema de Fichas Técnicas
           </CardTitle>
           <CardDescription>
-            {isSignUp ? 'Crear una nueva cuenta' : 'Inicia sesión para continuar'}
+            Inicia sesión para continuar
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Correo electrónico</Label>
+              <Label htmlFor="username">Usuario</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="correo@ejemplo.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="username"
+                type="text"
+                placeholder="Nombre de usuario"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
               />
             </div>
@@ -80,20 +73,9 @@ const Login = () => {
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Cargando...' : isSignUp ? 'Crear cuenta' : 'Iniciar sesión'}
+              {loading ? 'Cargando...' : 'Iniciar sesión'}
             </Button>
           </form>
-          <div className="mt-4 text-center">
-            <button
-              type="button"
-              className="text-sm text-muted-foreground hover:text-primary underline"
-              onClick={() => setIsSignUp(!isSignUp)}
-            >
-              {isSignUp 
-                ? '¿Ya tienes cuenta? Inicia sesión' 
-                : '¿No tienes cuenta? Regístrate'}
-            </button>
-          </div>
         </CardContent>
       </Card>
     </div>
