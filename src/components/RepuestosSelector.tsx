@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Repuesto, RepuestoFicha } from '@/types';
-import { getRepuestos } from '@/lib/storage';
+import { getRepuestos } from '@/lib/cloudStorage';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2, Search } from 'lucide-react';
@@ -15,7 +15,11 @@ const RepuestosSelector = ({ selectedRepuestos, onRepuestosChange }: Props) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    setRepuestos(getRepuestos());
+    const loadRepuestos = async () => {
+      const data = await getRepuestos();
+      setRepuestos(data);
+    };
+    loadRepuestos();
   }, []);
 
   const filteredRepuestos = repuestos.filter(

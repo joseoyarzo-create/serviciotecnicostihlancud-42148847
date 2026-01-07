@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { FichaTecnica, Cliente, RepuestoFicha, Tecnico } from '@/types';
-import { getClientes, saveCliente, saveFicha, generateId, getNextNumero, incrementContador, getModelos, saveModelo } from '@/lib/storage';
+import { getClientes, saveCliente, saveFicha, generateId, getModelos, saveModelo } from '@/lib/cloudStorage';
 import { generateWordDocument } from '@/lib/generateWord';
 import { generatePdfDocument, printFicha } from '@/lib/generatePdf';
 import { Input } from '@/components/ui/input';
@@ -43,9 +43,22 @@ const FichaTecnicaPage = () => {
   const [tecnico, setTecnico] = useState<Tecnico>('JORGE');
 
   useEffect(() => {
-    setClientes(getClientes());
-    setModelos(getModelos().map((m) => m.modelo));
+    loadData();
   }, []);
+
+  const loadData = async () => {
+    try {
+      const [clientesData, modelosData] = await Promise.all([
+        getClientes(),
+        getModelos(),
+      ]);
+      setClientes(clientesData);
+      setModelos(modelosData.map((m) => m.modelo));
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast({ title: 'Error', description: 'Error al cargar datos', variant: 'destructive' });
+    }
+  };
 
   const handleClienteSelect = (clienteId: string) => {
     if (clienteId === 'nuevo') {
@@ -95,11 +108,11 @@ const FichaTecnicaPage = () => {
       } else {
         cliente = { id: generateId(), nombre: clienteNombre, telefono: clienteTelefono };
       }
-      saveCliente(cliente);
+      await saveCliente(cliente);
 
       // Save modelo if new
       if (!modelos.includes(modeloMaquina)) {
-        saveModelo({ id: generateId(), modelo: modeloMaquina });
+        await saveModelo({ id: generateId(), modelo: modeloMaquina });
       }
 
       const ficha: FichaTecnica = {
@@ -119,7 +132,7 @@ const FichaTecnicaPage = () => {
         fechaEntrega,
       };
 
-      saveFicha(ficha);
+      await saveFicha(ficha);
 
       // Generate document based on type
       if (type === 'word') {
@@ -147,9 +160,8 @@ const FichaTecnicaPage = () => {
       setFechaReparacion(new Date());
       setFechaEntrega(null);
       
-      // Refresh clientes
-      setClientes(getClientes());
-      setModelos(getModelos().map((m) => m.modelo));
+      // Refresh data
+      await loadData();
     } catch (error) {
       console.error('Error:', error);
       toast({ title: 'Error', description: 'Error al generar el documento', variant: 'destructive' });

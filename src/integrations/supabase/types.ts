@@ -14,7 +14,144 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      clientes: {
+        Row: {
+          created_at: string
+          direccion: string | null
+          id: string
+          nombre: string
+          telefono: string | null
+        }
+        Insert: {
+          created_at?: string
+          direccion?: string | null
+          id?: string
+          nombre: string
+          telefono?: string | null
+        }
+        Update: {
+          created_at?: string
+          direccion?: string | null
+          id?: string
+          nombre?: string
+          telefono?: string | null
+        }
+        Relationships: []
+      }
+      contador: {
+        Row: {
+          id: string
+          valor: number
+        }
+        Insert: {
+          id?: string
+          valor?: number
+        }
+        Update: {
+          id?: string
+          valor?: number
+        }
+        Relationships: []
+      }
+      fichas: {
+        Row: {
+          cliente_direccion: string | null
+          cliente_nombre: string
+          cliente_telefono: string | null
+          created_at: string
+          fecha_entrega: string | null
+          fecha_ingreso: string
+          fecha_reparacion: string | null
+          id: string
+          mecanico: string
+          modelo_maquina: string
+          numero_boleta: string
+          numero_serie: string | null
+          observaciones: string | null
+          repuestos: Json | null
+          servicios: Json | null
+          updated_at: string
+        }
+        Insert: {
+          cliente_direccion?: string | null
+          cliente_nombre: string
+          cliente_telefono?: string | null
+          created_at?: string
+          fecha_entrega?: string | null
+          fecha_ingreso: string
+          fecha_reparacion?: string | null
+          id?: string
+          mecanico: string
+          modelo_maquina: string
+          numero_boleta: string
+          numero_serie?: string | null
+          observaciones?: string | null
+          repuestos?: Json | null
+          servicios?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          cliente_direccion?: string | null
+          cliente_nombre?: string
+          cliente_telefono?: string | null
+          created_at?: string
+          fecha_entrega?: string | null
+          fecha_ingreso?: string
+          fecha_reparacion?: string | null
+          id?: string
+          mecanico?: string
+          modelo_maquina?: string
+          numero_boleta?: string
+          numero_serie?: string | null
+          observaciones?: string | null
+          repuestos?: Json | null
+          servicios?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      modelos: {
+        Row: {
+          created_at: string
+          id: string
+          nombre: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nombre: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nombre?: string
+        }
+        Relationships: []
+      }
+      repuestos: {
+        Row: {
+          codigo: string
+          created_at: string
+          id: string
+          nombre: string
+          precio: number
+        }
+        Insert: {
+          codigo: string
+          created_at?: string
+          id?: string
+          nombre: string
+          precio?: number
+        }
+        Update: {
+          codigo?: string
+          created_at?: string
+          id?: string
+          nombre?: string
+          precio?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

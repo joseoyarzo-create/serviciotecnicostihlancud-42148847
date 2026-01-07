@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { Repuesto } from '@/types';
-import { getRepuestos, saveRepuesto, saveRepuestosBulk, deleteRepuesto, generateId } from '@/lib/storage';
+import { getRepuestos, saveRepuesto, saveRepuestosBulk, deleteRepuesto, generateId } from '@/lib/cloudStorage';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -15,6 +15,7 @@ const RepuestosPage = () => {
   const [repuestos, setRepuestos] = useState<Repuesto[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // New repuesto form
   const [nuevoCodigo, setNuevoCodigo] = useState('');
@@ -30,11 +31,20 @@ const RepuestosPage = () => {
     loadRepuestos();
   }, []);
 
-  const loadRepuestos = () => {
-    setRepuestos(getRepuestos());
+  const loadRepuestos = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getRepuestos();
+      setRepuestos(data);
+    } catch (error) {
+      console.error('Error loading repuestos:', error);
+      toast({ title: 'Error', description: 'Error al cargar repuestos', variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleAddRepuesto = () => {
+  const handleAddRepuesto = async () => {
     if (!nuevoCodigo.trim() || !nuevoNombre.trim()) {
       toast({ title: 'Error', description: 'Código y nombre son requeridos', variant: 'destructive' });
       return;
@@ -48,20 +58,24 @@ const RepuestosPage = () => {
       precio,
     };
 
-    saveRepuesto(repuesto);
-    loadRepuestos();
-    setNuevoCodigo('');
-    setNuevoNombre('');
-    setNuevoPrecio('');
-    toast({ title: 'Éxito', description: 'Repuesto agregado correctamente' });
+    try {
+      await saveRepuesto(repuesto);
+      await loadRepuestos();
+      setNuevoCodigo('');
+      setNuevoNombre('');
+      setNuevoPrecio('');
+      toast({ title: 'Éxito', description: 'Repuesto agregado correctamente' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Error al agregar repuesto', variant: 'destructive' });
+    }
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
@@ -104,8 +118,8 @@ const RepuestosPage = () => {
         }
 
         if (nuevosRepuestos.length > 0) {
-          saveRepuestosBulk(nuevosRepuestos);
-          loadRepuestos();
+          await saveRepuestosBulk(nuevosRepuestos);
+          await loadRepuestos();
           toast({ title: 'Éxito', description: `${nuevosRepuestos.length} repuestos importados` });
         } else {
           toast({ title: 'Aviso', description: 'No se encontraron repuestos válidos en el archivo', variant: 'destructive' });
@@ -137,7 +151,7 @@ const RepuestosPage = () => {
     setEditPrecio('');
   };
 
-  const saveEdit = (id: string) => {
+  const saveEdit = async (id: string) => {
     if (!editCodigo.trim() || !editNombre.trim()) {
       toast({ title: 'Error', description: 'Código y nombre son requeridos', variant: 'destructive' });
       return;
@@ -150,17 +164,25 @@ const RepuestosPage = () => {
       precio: parseInt(editPrecio) || 1,
     };
 
-    saveRepuesto(repuesto);
-    loadRepuestos();
-    cancelEdit();
-    toast({ title: 'Éxito', description: 'Repuesto actualizado' });
+    try {
+      await saveRepuesto(repuesto);
+      await loadRepuestos();
+      cancelEdit();
+      toast({ title: 'Éxito', description: 'Repuesto actualizado' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Error al actualizar repuesto', variant: 'destructive' });
+    }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm('¿Está seguro de eliminar este repuesto?')) {
-      deleteRepuesto(id);
-      loadRepuestos();
-      toast({ title: 'Éxito', description: 'Repuesto eliminado' });
+      try {
+        await deleteRepuesto(id);
+        await loadRepuestos();
+        toast({ title: 'Éxito', description: 'Repuesto eliminado' });
+      } catch (error) {
+        toast({ title: 'Error', description: 'Error al eliminar repuesto', variant: 'destructive' });
+      }
     }
   };
 
@@ -281,7 +303,13 @@ const RepuestosPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredRepuestos.length === 0 ? (
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={4} className="text-center text-muted-foreground py-8">
+                        Cargando...
+                      </td>
+                    </tr>
+                  ) : filteredRepuestos.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="text-center text-muted-foreground py-8">
                         No hay repuestos. Importa un archivo Excel o agrega manualmente.

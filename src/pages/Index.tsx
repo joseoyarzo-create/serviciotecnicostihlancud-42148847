@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FichaTecnica } from '@/types';
-import { getFichas, getRepuestos, getClientes, deleteFicha } from '@/lib/storage';
+import { getFichas, getRepuestos, getClientes, deleteFicha } from '@/lib/cloudStorage';
 import { generateWordDocument } from '@/lib/generateWord';
 import { generatePdfDocument, printFicha } from '@/lib/generatePdf';
 import { Button } from '@/components/ui/button';
@@ -22,19 +22,32 @@ const Index = () => {
   const { toast } = useToast();
   const [fichas, setFichas] = useState<FichaTecnica[]>([]);
   const [stats, setStats] = useState({ repuestos: 0, clientes: 0, fichas: 0 });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadData();
   }, []);
 
-  const loadData = () => {
-    const allFichas = getFichas();
-    setFichas(allFichas.slice(-5).reverse());
-    setStats({
-      repuestos: getRepuestos().length,
-      clientes: getClientes().length,
-      fichas: allFichas.length,
-    });
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const [allFichas, repuestos, clientes] = await Promise.all([
+        getFichas(),
+        getRepuestos(),
+        getClientes(),
+      ]);
+      setFichas(allFichas.slice(0, 5));
+      setStats({
+        repuestos: repuestos.length,
+        clientes: clientes.length,
+        fichas: allFichas.length,
+      });
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast({ title: 'Error', description: 'Error al cargar datos', variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDownloadWord = async (ficha: FichaTecnica) => {
@@ -64,11 +77,15 @@ const Index = () => {
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm('¿Está seguro de eliminar esta ficha?')) {
-      deleteFicha(id);
-      loadData();
-      toast({ title: 'Éxito', description: 'Ficha eliminada' });
+      try {
+        await deleteFicha(id);
+        await loadData();
+        toast({ title: 'Éxito', description: 'Ficha eliminada' });
+      } catch (error) {
+        toast({ title: 'Error', description: 'Error al eliminar ficha', variant: 'destructive' });
+      }
     }
   };
 
@@ -164,7 +181,11 @@ const Index = () => {
             Fichas Recientes
           </h2>
           
-          {fichas.length === 0 ? (
+          {isLoading ? (
+            <p className="text-center text-muted-foreground py-8">
+              Cargando...
+            </p>
+          ) : fichas.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
               No hay fichas técnicas. ¡Crea la primera!
             </p>
