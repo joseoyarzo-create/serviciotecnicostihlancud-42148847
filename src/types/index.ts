@@ -2,6 +2,7 @@ export interface Cliente {
   id: string;
   nombre: string;
   telefono: string;
+  puntos?: number;
 }
 
 export interface Repuesto {

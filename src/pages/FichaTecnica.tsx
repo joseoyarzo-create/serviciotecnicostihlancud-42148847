@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { FichaTecnica, Cliente, RepuestoFicha, Tecnico, EstadoFicha } from '@/types';
-import { getClientes, saveCliente, saveFicha, generateId, getModelos, saveModelo, getFichaById } from '@/lib/cloudStorage';
+import { getClientes, saveCliente, saveFicha, generateId, getModelos, saveModelo, getFichaById, getConfigSistema, ConfigSistema } from '@/lib/cloudStorage';
 import { generateWordDocument } from '@/lib/generateWord';
 import { generatePdfDocument, printFicha } from '@/lib/generatePdf';
 import { Input } from '@/components/ui/input';
@@ -18,8 +18,19 @@ import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import RepuestosSelector from '@/components/RepuestosSelector';
 import ServiciosTable, { DEFAULT_SERVICIOS } from '@/components/ServiciosTable';
-import { CalendarIcon, FileText, Save, User, Wrench, FileDown, Printer } from 'lucide-react';
+import { CalendarIcon, FileText, Save, User, Wrench, FileDown, Printer, Award } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+const BenefitBadge = ({ label, achieved }: { label: string; achieved: boolean }) => (
+  <div className={cn(
+    "flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-bold border transition-colors",
+    achieved 
+      ? "bg-green-100 border-green-300 text-green-700" 
+      : "bg-gray-50 border-gray-200 text-gray-400 opacity-50"
+  )}>
+    {achieved ? "✓" : "○"} {label}
+  </div>
+);
 
 const FichaTecnicaPage = () => {
   const { id } = useParams();
@@ -46,8 +57,14 @@ const FichaTecnicaPage = () => {
   const [servicios, setServicios] = useState(DEFAULT_SERVICIOS);
   const [tecnico, setTecnico] = useState<Tecnico>('JORGE');
   const [estado, setEstado] = useState<EstadoFicha>('TALLER');
+  const [config, setConfig] = useState<ConfigSistema | null>(null);
 
   useEffect(() => {
+    const loadConfig = async () => {
+      const data = await getConfigSistema();
+      setConfig(data);
+    };
+    loadConfig();
     loadData();
     if (id) {
       loadFicha(id);
@@ -154,11 +171,19 @@ const FichaTecnicaPage = () => {
     try {
       // Save cliente
       let cliente: Cliente;
-      if (selectedClienteId) {
-        cliente = { id: selectedClienteId, nombre: clienteNombre, telefono: clienteTelefono };
+      
+      // Intentamos normalizar el nombre para la búsqueda
+      const normalizedNombre = clienteNombre.trim().toUpperCase();
+      const existingCliente = clientes.find(c => c.nombre.toUpperCase() === normalizedNombre);
+
+      if (existingCliente) {
+        cliente = { id: existingCliente.id, nombre: normalizedNombre, telefono: clienteTelefono };
+      } else if (selectedClienteId) {
+        cliente = { id: selectedClienteId, nombre: normalizedNombre, telefono: clienteTelefono };
       } else {
-        cliente = { id: generateId(), nombre: clienteNombre, telefono: clienteTelefono };
+        cliente = { id: generateId(), nombre: normalizedNombre, telefono: clienteTelefono };
       }
+      
       await saveCliente(cliente);
 
       // Save modelo if new
@@ -178,7 +203,7 @@ const FichaTecnicaPage = () => {
         tipoAveria,
         repuestos,
         servicios,
-        recomendaciones: 'REPARACIÓN GARANTIZADA POR 10 DÍAS DE LA FECHA DE RETIRO',
+        recomendaciones: 'REPARACIÓN GARANTIZADA POR 20 DÍAS DE LA FECHA DE RETIRO',
         tecnico,
         fechaEntrega,
         estado,
@@ -376,6 +401,76 @@ const FichaTecnicaPage = () => {
                   placeholder="+56 9 1234 5678"
                 />
               </div>
+
+              {config?.sistema_puntos_activo && selectedClienteId && (
+                <div className="input-group">
+                  <Label className="input-label">Fidelización y Beneficios</Label>
+                  <div className="flex flex-col gap-3 p-3 bg-orange-50 border border-orange-200 rounded-md">
+                    {/* Header Puntos y Nivel */}
+                    <div className="flex items-center justify-between text-orange-700 font-bold">
+                      <div className="flex items-center gap-2">
+                        <Award className="h-5 w-5" />
+                        <span>{clientes.find(c => c.id === selectedClienteId)?.puntos || 0} Puntos</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1 justify-end">
+                        {(clientes.find(c => c.id === selectedClienteId)?.puntos || 0) >= config.puntos_meta_diamante ? (
+                          <span className="text-[9px] bg-blue-600 text-white px-2 py-0.5 rounded-full animate-pulse">DIAMANTE</span>
+                        ) : (clientes.find(c => c.id === selectedClienteId)?.puntos || 0) >= config.puntos_meta_oro ? (
+                          <span className="text-[9px] bg-yellow-500 text-white px-2 py-0.5 rounded-full animate-pulse">ORO</span>
+                        ) : (clientes.find(c => c.id === selectedClienteId)?.puntos || 0) >= config.puntos_meta_plata ? (
+                          <span className="text-[9px] bg-slate-400 text-white px-2 py-0.5 rounded-full">PLATA</span>
+                        ) : null}
+                      </div>
+                    </div>
+                    
+                    {/* Barra de Progreso Principal (Próximo Nivel) */}
+                    <div className="space-y-1">
+                      <div className="w-full bg-orange-200 h-1.5 rounded-full overflow-hidden">
+                        <div 
+                          className="bg-orange-500 h-full transition-all duration-500" 
+                          style={{ 
+                            width: `${Math.min(((clientes.find(c => c.id === selectedClienteId)?.puntos || 0) / config.puntos_meta_oro) * 100, 100)}%` 
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Beneficios Disponibles */}
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      <BenefitBadge 
+                        label="Afilado Gratis" 
+                        achieved={(clientes.find(c => c.id === selectedClienteId)?.puntos || 0) >= config.puntos_meta_afilado} 
+                      />
+                      <BenefitBadge 
+                        label="Inspección 10 Pts" 
+                        achieved={(clientes.find(c => c.id === selectedClienteId)?.puntos || 0) >= config.puntos_meta_inspeccion} 
+                      />
+                      <BenefitBadge 
+                        label="Carburación Express" 
+                        achieved={(clientes.find(c => c.id === selectedClienteId)?.puntos || 0) >= config.puntos_meta_carburacion} 
+                      />
+                      <BenefitBadge 
+                        label="Aceite de Cadena" 
+                        achieved={(clientes.find(c => c.id === selectedClienteId)?.puntos || 0) >= config.puntos_meta_aceite_cadena} 
+                      />
+                      <BenefitBadge 
+                        label="Ultrasonido Gratis" 
+                        achieved={(clientes.find(c => c.id === selectedClienteId)?.puntos || 0) >= config.puntos_meta_ultrasonido} 
+                      />
+                      <BenefitBadge 
+                        label="Garantía 30 Días" 
+                        achieved={(clientes.find(c => c.id === selectedClienteId)?.puntos || 0) >= config.puntos_meta_garantia_extendida} 
+                      />
+                    </div>
+                    
+                    {(clientes.find(c => c.id === selectedClienteId)?.puntos || 0) >= config.puntos_meta_diamante && (
+                      <p className="text-[10px] text-blue-700 font-bold mt-1 text-center border-t border-blue-200 pt-1">
+                        ✓ RETIRO Y ENTREGA GRATIS ACTIVADO
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 
@@ -470,7 +565,17 @@ const FichaTecnicaPage = () => {
 
               <div className="input-group">
                 <Label className="input-label">Estado de la Máquina *</Label>
-                <Select value={estado} onValueChange={(value: EstadoFicha) => setEstado(value)}>
+                <Select 
+                  value={estado} 
+                  onValueChange={(value: EstadoFicha) => {
+                    setEstado(value);
+                    if (value === 'ENTREGADA' && !fechaEntrega) {
+                      setFechaEntrega(new Date());
+                    } else if (value === 'TALLER') {
+                      setFechaEntrega(null);
+                    }
+                  }}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccione estado" />
                   </SelectTrigger>
@@ -486,7 +591,7 @@ const FichaTecnicaPage = () => {
           {/* Garantía */}
           <section className="form-section animate-fade-in bg-primary/5 border-primary/20" style={{ animationDelay: '0.6s' }}>
             <p className="font-bold text-center text-lg">
-              REPARACIÓN GARANTIZADA POR 10 DÍAS DE LA FECHA DE RETIRO
+              REPARACIÓN GARANTIZADA POR 20 DÍAS DE LA FECHA DE RETIRO
             </p>
           </section>
 

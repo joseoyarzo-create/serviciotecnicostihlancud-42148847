@@ -2,6 +2,80 @@ import { supabase } from '@/integrations/supabase/client';
 import { Cliente, Repuesto, FichaTecnica, ServicioItem, RepuestoFicha } from '@/types';
 import type { Json } from '@/integrations/supabase/types';
 
+// Configuración
+export interface ConfigSistema {
+  sistema_puntos_activo: boolean;
+  puntos_por_cada_clp: number;
+  puntos_meta_afilado: number;
+  puntos_meta_plata: number;
+  puntos_meta_oro: number;
+  puntos_meta_diamante: number;
+  puntos_meta_carburacion: number;
+  puntos_meta_ultrasonido: number;
+  puntos_meta_inspeccion: number;
+  puntos_meta_aceite_cadena: number;
+  puntos_meta_garantia_extendida: number;
+  valor_base_mantencion: number;
+}
+
+export const getConfigSistema = async (): Promise<ConfigSistema> => {
+  const { data, error } = await supabase
+    .from('configuracion')
+    .select('*');
+  
+  const config: ConfigSistema = {
+    sistema_puntos_activo: false,
+    puntos_por_cada_clp: 5000,
+    puntos_meta_afilado: 16,
+    puntos_meta_plata: 30,
+    puntos_meta_oro: 50,
+    puntos_meta_diamante: 100,
+    puntos_meta_carburacion: 10,
+    puntos_meta_ultrasonido: 25,
+    puntos_meta_inspeccion: 5,
+    puntos_meta_aceite_cadena: 15,
+    puntos_meta_garantia_extendida: 40,
+    valor_base_mantencion: 20000,
+  };
+
+  if (error || !data) return config;
+
+  data.forEach(item => {
+    if (item.id === 'sistema_puntos_activo') config.sistema_puntos_activo = item.valor;
+    if (item.id === 'puntos_por_cada_clp') config.puntos_por_cada_clp = item.valor_numerico || 5000;
+    if (item.id === 'puntos_meta_afilado') config.puntos_meta_afilado = item.valor_numerico || 16;
+    if (item.id === 'puntos_meta_plata') config.puntos_meta_plata = item.valor_numerico || 30;
+    if (item.id === 'puntos_meta_oro') config.puntos_meta_oro = item.valor_numerico || 50;
+    if (item.id === 'puntos_meta_diamante') config.puntos_meta_diamante = item.valor_numerico || 100;
+    if (item.id === 'puntos_meta_carburacion') config.puntos_meta_carburacion = item.valor_numerico || 10;
+    if (item.id === 'puntos_meta_ultrasonido') config.puntos_meta_ultrasonido = item.valor_numerico || 25;
+    if (item.id === 'puntos_meta_inspeccion') config.puntos_meta_inspeccion = item.valor_numerico || 5;
+    if (item.id === 'puntos_meta_aceite_cadena') config.puntos_meta_aceite_cadena = item.valor_numerico || 15;
+    if (item.id === 'puntos_meta_garantia_extendida') config.puntos_meta_garantia_extendida = item.valor_numerico || 40;
+    if (item.id === 'valor_base_mantencion') config.valor_base_mantencion = item.valor_numerico || 20000;
+  });
+
+  return config;
+};
+
+export const updateConfigParam = async (id: string, updates: { valor?: boolean, valor_numerico?: number }): Promise<void> => {
+  const { error } = await supabase
+    .from('configuracion')
+    .update(updates)
+    .eq('id', id);
+  
+  if (error) throw error;
+};
+
+export const isSistemaPuntosActivo = async (): Promise<boolean> => {
+  const config = await getConfigSistema();
+  return config.sistema_puntos_activo;
+};
+
+export const setSistemaPuntosActivo = async (activo: boolean): Promise<void> => {
+  await updateConfigParam('sistema_puntos_activo', { valor: activo });
+};
+
 // Clientes
 export const getClientes = async (): Promise<Cliente[]> => {
   const { data, error } = await supabase
@@ -18,15 +92,29 @@ export const getClientes = async (): Promise<Cliente[]> => {
     id: c.id,
     nombre: c.nombre,
     telefono: c.telefono || '',
+    puntos: c.puntos || 0,
   }));
 };
 
 export const saveCliente = async (cliente: Cliente): Promise<void> => {
+  // Primero buscamos si ya existe un cliente con ese mismo nombre (ignorado mayúsculas/minúsculas)
+  const { data: existingClients } = await supabase
+    .from('clientes')
+    .select('id, nombre, telefono')
+    .ilike('nombre', cliente.nombre.trim());
+
+  let targetId = cliente.id;
+  
+  if (existingClients && existingClients.length > 0) {
+    // Si existe uno con el mismo nombre, usamos su ID para actualizarlo en lugar de crear uno nuevo
+    targetId = existingClients[0].id;
+  }
+
   const { error } = await supabase
     .from('clientes')
     .upsert({
-      id: cliente.id,
-      nombre: cliente.nombre,
+      id: targetId,
+      nombre: cliente.nombre.trim().toUpperCase(),
       telefono: cliente.telefono,
     }, { onConflict: 'id' });
   
@@ -174,7 +262,7 @@ export const getFichas = async (): Promise<FichaTecnica[]> => {
     tipoAveria: f.observaciones || '',
     repuestos: (Array.isArray(f.repuestos) ? f.repuestos : []) as unknown as RepuestoFicha[],
     servicios: (Array.isArray(f.servicios) ? f.servicios : []) as unknown as ServicioItem[],
-    recomendaciones: 'REPARACIÓN GARANTIZADA POR 10 DÍAS DE LA FECHA DE RETIRO',
+    recomendaciones: 'REPARACIÓN GARANTIZADA POR 20 DÍAS DE LA FECHA DE RETIRO',
     tecnico: f.mecanico as 'JORGE' | 'JEAN',
     estado: (f.cliente_direccion === 'ENTREGADA' ? 'ENTREGADA' : 'TALLER') as 'TALLER' | 'ENTREGADA',
   }));
@@ -209,7 +297,7 @@ export const getFichaById = async (id: string): Promise<FichaTecnica | null> => 
     tipoAveria: data.observaciones || '',
     repuestos: (Array.isArray(data.repuestos) ? data.repuestos : []) as unknown as RepuestoFicha[],
     servicios: (Array.isArray(data.servicios) ? data.servicios : []) as unknown as ServicioItem[],
-    recomendaciones: 'REPARACIÓN GARANTIZADA POR 10 DÍAS DE LA FECHA DE RETIRO',
+    recomendaciones: 'REPARACIÓN GARANTIZADA POR 20 DÍAS DE LA FECHA DE RETIRO',
     tecnico: data.mecanico as 'JORGE' | 'JEAN',
     estado: (data.cliente_direccion === 'ENTREGADA' ? 'ENTREGADA' : 'TALLER') as 'TALLER' | 'ENTREGADA',
   };
@@ -230,7 +318,35 @@ export const saveFicha = async (ficha: FichaTecnica): Promise<void> => {
     servicios: JSON.parse(JSON.stringify(ficha.servicios)) as Json,
     observaciones: ficha.tipoAveria,
     cliente_direccion: ficha.estado,
+    // firma_cliente: ficha.firmaCliente || null, -- Reverted as requested before
   };
+
+  // Logic for points if system is active
+  if (ficha.estado === 'ENTREGADA') {
+    const config = await getConfigSistema();
+    if (config.sistema_puntos_activo) {
+      const totalRepuestos = ficha.repuestos.reduce(
+        (sum, r) => sum + (r.precioEditado ?? r.precio) * r.cantidad,
+        0
+      );
+      
+      const pointsToEarn = Math.floor((totalRepuestos + config.valor_base_mantencion) / config.puntos_por_cada_clp);
+      
+      if (pointsToEarn > 0) {
+        const { data: clientData } = await supabase
+          .from('clientes')
+          .select('puntos')
+          .eq('id', ficha.cliente.id)
+          .single();
+        
+        const currentPoints = clientData?.puntos || 0;
+        await supabase
+          .from('clientes')
+          .update({ puntos: currentPoints + pointsToEarn })
+          .eq('id', ficha.cliente.id);
+      }
+    }
+  }
 
   // Check if ficha exists
   const { data: existing } = await supabase
@@ -264,9 +380,12 @@ export const saveFicha = async (ficha: FichaTecnica): Promise<void> => {
 export const updateFichaEstado = async (id: string, estado: 'TALLER' | 'ENTREGADA'): Promise<void> => {
   const updateData: Record<string, unknown> = { cliente_direccion: estado };
   
-  // Si se cambia a ENTREGADA, también podemos establecer la fecha de entrega si no existe
+  // Si se cambia a ENTREGADA, establecemos la fecha de entrega
+  // Si se cambia a TALLER, la limpiamos
   if (estado === 'ENTREGADA') {
     updateData.fecha_entrega = new Date().toISOString();
+  } else {
+    updateData.fecha_entrega = null;
   }
 
   const { error } = await supabase

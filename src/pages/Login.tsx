@@ -19,6 +19,15 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
 
+    // Temp code to create user if it doesn't exist
+    if (username === 'sotaventoancud' && password === 'pudeto351') {
+      const email = 'sotaventoancud@taller.local';
+      const { error: signUpError } = await signUp(email, password);
+      if (!signUpError) {
+        toast({ title: 'Usuario creado', description: 'Se ha creado el nuevo usuario.' });
+      }
+    }
+
     // Convert username to email format for Supabase auth
     const email = `${username.toLowerCase().trim()}@taller.local`;
     const { error } = await signIn(email, password);

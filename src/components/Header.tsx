@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FileText, Package, Home, LogOut } from 'lucide-react';
+import { FileText, Package, Home, LogOut, TrendingUp, Settings } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import stihlLogo from '@/assets/stihl-logo.jpg';
@@ -12,7 +12,12 @@ const Header = () => {
     { path: '/', label: 'Inicio', icon: Home },
     { path: '/ficha-tecnica', label: 'Nueva Ficha', icon: FileText },
     { path: '/repuestos', label: 'Repuestos', icon: Package },
+    { path: '/stats', label: 'Estadísticas', icon: TrendingUp },
   ];
+
+  if (user?.email === 'n4chu70@taller.local') {
+    navItems.push({ path: '/admin', label: 'Admin', icon: Settings });
+  }
 
   return (
     <header className="stihl-header">

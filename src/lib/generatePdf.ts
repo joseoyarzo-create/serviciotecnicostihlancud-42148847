@@ -249,7 +249,7 @@ export const generatePdfDocument = async (ficha: FichaTecnica): Promise<void> =>
   yPos = (doc as any).lastAutoTable.finalY + 3;
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
-  doc.text('REPARACION GARATIZADA POR 10 DIAS DE LA FECHA DE RETIRO', 14, yPos);
+  doc.text('REPARACION GARATIZADA POR 20 DIAS DE LA FECHA DE RETIRO', 14, yPos);
   yPos += 4;
   doc.text(`FECHA DE ENTREGA: ${formatDate(ficha.fechaEntrega)}`, 14, yPos);
 
@@ -413,7 +413,7 @@ export const printFicha = (ficha: FichaTecnica): void => {
       </table>
 
       <div class="footer">
-        <p>REPARACION GARATIZADA POR 10 DIAS DE LA FECHA DE RETIRO</p>
+        <p>REPARACION GARATIZADA POR 20 DIAS DE LA FECHA DE RETIRO</p>
         <p>FECHA DE ENTREGA: ${formatDate(ficha.fechaEntrega)}</p>
       </div>
 

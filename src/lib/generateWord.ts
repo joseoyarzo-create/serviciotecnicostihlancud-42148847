@@ -408,7 +408,7 @@ export const generateWordDocument = async (ficha: FichaTecnica): Promise<void> =
             children: [new TextRun({ text: 'RECOMENDACIONES:', bold: true })],
           }),
           new Paragraph({
-            children: [new TextRun({ text: 'REPARACIÓN GARANTIZADA POR 10 DÍAS DE LA FECHA DE RETIRO', bold: true })],
+            children: [new TextRun({ text: 'REPARACIÓN GARANTIZADA POR 20 DÍAS DE LA FECHA DE RETIRO', bold: true })],
             spacing: { after: 200 },
           }),
           new Paragraph({
