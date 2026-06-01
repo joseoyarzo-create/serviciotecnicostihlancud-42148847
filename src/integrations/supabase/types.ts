@@ -20,6 +20,7 @@ export type Database = {
           direccion: string | null
           id: string
           nombre: string
+          puntos: number
           telefono: string | null
         }
         Insert: {
@@ -27,6 +28,7 @@ export type Database = {
           direccion?: string | null
           id?: string
           nombre: string
+          puntos?: number
           telefono?: string | null
         }
         Update: {
@@ -34,7 +36,26 @@ export type Database = {
           direccion?: string | null
           id?: string
           nombre?: string
+          puntos?: number
           telefono?: string | null
+        }
+        Relationships: []
+      }
+      configuracion: {
+        Row: {
+          id: string
+          valor: boolean | null
+          valor_numerico: number | null
+        }
+        Insert: {
+          id: string
+          valor?: boolean | null
+          valor_numerico?: number | null
+        }
+        Update: {
+          id?: string
+          valor?: boolean | null
+          valor_numerico?: number | null
         }
         Relationships: []
       }
