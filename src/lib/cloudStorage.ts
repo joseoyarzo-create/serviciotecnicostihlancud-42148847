@@ -378,15 +378,10 @@ export const saveFicha = async (ficha: FichaTecnica): Promise<void> => {
 };
 
 export const updateFichaEstado = async (id: string, estado: 'TALLER' | 'ENTREGADA'): Promise<void> => {
-  const updateData: Record<string, unknown> = { cliente_direccion: estado };
-  
-  // Si se cambia a ENTREGADA, establecemos la fecha de entrega
-  // Si se cambia a TALLER, la limpiamos
-  if (estado === 'ENTREGADA') {
-    updateData.fecha_entrega = new Date().toISOString();
-  } else {
-    updateData.fecha_entrega = null;
-  }
+  const updateData: { cliente_direccion: string; fecha_entrega: string | null } = {
+    cliente_direccion: estado,
+    fecha_entrega: estado === 'ENTREGADA' ? new Date().toISOString() : null,
+  };
 
   const { error } = await supabase
     .from('fichas')
