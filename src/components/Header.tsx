@@ -24,6 +24,9 @@ const Header = () => {
       setExporting(false);
     }
   };
+
+  const navItems = [
+    { path: '/', label: 'Inicio', icon: Home },
     { path: '/ficha-tecnica', label: 'Nueva Ficha', icon: FileText },
     { path: '/repuestos', label: 'Repuestos', icon: Package },
     { path: '/stats', label: 'Estadísticas', icon: TrendingUp },
