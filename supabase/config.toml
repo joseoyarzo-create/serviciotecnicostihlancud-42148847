@@ -1,1 +1,4 @@
 project_id = "bpqqjqeygpqjpykiagtj"
+
+[functions.create-user-sotavento]
+verify_jwt = false
