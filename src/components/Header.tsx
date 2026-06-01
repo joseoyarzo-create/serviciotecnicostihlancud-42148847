@@ -74,6 +74,20 @@ const Header = () => {
             <Button
               variant="ghost"
               size="sm"
+              onClick={handleExport}
+              disabled={exporting}
+              className="flex items-center gap-2"
+              title="Descargar todos los datos en Excel"
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">{exporting ? 'Exportando...' : 'Exportar Excel'}</span>
+            </Button>
+          )}
+
+          {user && (
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={signOut}
               className="flex items-center gap-2"
             >
