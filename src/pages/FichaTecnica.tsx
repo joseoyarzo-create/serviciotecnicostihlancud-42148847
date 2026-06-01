@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { FichaTecnica, Cliente, RepuestoFicha, Tecnico, EstadoFicha } from '@/types';
 import { getClientes, saveCliente, saveFicha, generateId, getModelos, saveModelo, getFichaById, getConfigSistema, ConfigSistema, getNextFolio } from '@/lib/cloudStorage';
-import { generateWordDocument } from '@/lib/generateWord';
+
 import { generatePdfDocument, printFicha } from '@/lib/generatePdf';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -40,7 +40,7 @@ const FichaTecnicaPage = () => {
   const [modelos, setModelos] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(!!id);
-  const [exportType, setExportType] = useState<'word' | 'pdf' | 'print'>('word');
+  const [exportType, setExportType] = useState<'pdf' | 'print'>('pdf');
 
   // Form state
   const [numeroBoleta, setNumeroBoleta] = useState('');
@@ -151,7 +151,7 @@ const FichaTecnicaPage = () => {
     setModeloMaquina(modelo);
   };
 
-  const handleSubmit = async (type: 'word' | 'pdf' | 'print') => {
+  const handleSubmit = async (type: 'pdf' | 'print') => {
     if (!numeroBoleta.trim()) {
       toast({ title: 'Error', description: 'El número de boleta es requerido', variant: 'destructive' });
       return;
@@ -212,10 +212,7 @@ const FichaTecnicaPage = () => {
       await saveFicha(ficha);
 
       // Generate document based on type
-      if (type === 'word') {
-        await generateWordDocument(ficha);
-        toast({ title: 'Éxito', description: `Ficha ${id ? 'actualizada' : 'guardada'} y documento Word generado` });
-      } else if (type === 'pdf') {
+      if (type === 'pdf') {
         await generatePdfDocument(ficha);
         toast({ title: 'Éxito', description: `Ficha ${id ? 'actualizada' : 'guardada'} y PDF generado` });
       } else {
@@ -598,20 +595,9 @@ const FichaTecnicaPage = () => {
           {/* Submit Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 animate-fade-in">
             <Button
-              onClick={() => handleSubmit('word')}
-              disabled={isLoading}
-              size="lg"
-              className="flex-1 hover-lift"
-            >
-              <Save className="mr-2 h-5 w-5" />
-              {isLoading && exportType === 'word' ? 'Generando...' : 'Guardar y Word'}
-            </Button>
-            
-            <Button
               onClick={() => handleSubmit('pdf')}
               disabled={isLoading}
               size="lg"
-              variant="secondary"
               className="flex-1 hover-lift"
             >
               <FileDown className="mr-2 h-5 w-5" />
