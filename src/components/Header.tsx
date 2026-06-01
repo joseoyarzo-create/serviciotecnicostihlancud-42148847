@@ -10,9 +10,20 @@ import stihlLogo from '@/assets/stihl-logo.jpg';
 const Header = () => {
   const location = useLocation();
   const { signOut, user } = useAuth();
+  const { toast } = useToast();
+  const [exporting, setExporting] = useState(false);
 
-  const navItems = [
-    { path: '/', label: 'Inicio', icon: Home },
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await exportAllToExcel();
+      toast({ title: 'Exportación lista', description: 'Se descargó el Excel con todos los datos.' });
+    } catch (e) {
+      toast({ title: 'Error', description: 'No se pudo exportar.', variant: 'destructive' });
+    } finally {
+      setExporting(false);
+    }
+  };
     { path: '/ficha-tecnica', label: 'Nueva Ficha', icon: FileText },
     { path: '/repuestos', label: 'Repuestos', icon: Package },
     { path: '/stats', label: 'Estadísticas', icon: TrendingUp },
