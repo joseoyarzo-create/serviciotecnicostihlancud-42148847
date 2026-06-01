@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FichaTecnica, EstadoFicha } from '@/types';
 import { getFichas, getRepuestos, getClientes, deleteFicha, updateFichaEstado, getModelos } from '@/lib/cloudStorage';
-import { generateWordDocument } from '@/lib/generateWord';
+
 import { generatePdfDocument, printFicha } from '@/lib/generatePdf';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -81,14 +81,6 @@ const Index = () => {
     }
   };
 
-  const handleDownloadWord = async (ficha: FichaTecnica) => {
-    try {
-      await generateWordDocument(ficha);
-      toast({ title: 'Éxito', description: 'Documento Word descargado' });
-    } catch (error) {
-      toast({ title: 'Error', description: 'Error al generar documento', variant: 'destructive' });
-    }
-  };
 
   const handleDownloadPdf = async (ficha: FichaTecnica) => {
     try {
@@ -328,10 +320,6 @@ const Index = () => {
                                     Marcar como Entregada
                                   </>
                                 )}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDownloadWord(ficha)}>
-                                <FileText className="mr-2 h-4 w-4" />
-                                Descargar Word
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleDownloadPdf(ficha)}>
                                 <FileDown className="mr-2 h-4 w-4" />
