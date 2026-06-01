@@ -124,6 +124,46 @@ export const saveCliente = async (cliente: Cliente): Promise<void> => {
   }
 };
 
+export const deleteCliente = async (id: string): Promise<void> => {
+  const { error } = await supabase.from('clientes').delete().eq('id', id);
+  if (error) {
+    console.error('Error deleting cliente:', error);
+    throw error;
+  }
+};
+
+export const getFichasByClienteNombre = async (nombre: string): Promise<FichaTecnica[]> => {
+  const { data, error } = await supabase
+    .from('fichas')
+    .select('*')
+    .ilike('cliente_nombre', nombre.trim())
+    .order('created_at', { ascending: false });
+
+  if (error || !data) return [];
+
+  return data.map((f: any) => ({
+    id: f.id,
+    numeroBoleta: f.numero_boleta,
+    numeroServicio: f.numero_boleta,
+    fechaIngreso: new Date(f.fecha_ingreso),
+    fechaReparacion: f.fecha_reparacion ? new Date(f.fecha_reparacion) : null,
+    fechaEntrega: f.fecha_entrega ? new Date(f.fecha_entrega) : null,
+    cliente: {
+      id: f.id,
+      nombre: f.cliente_nombre,
+      telefono: f.cliente_telefono || '',
+    },
+    modeloMaquina: f.modelo_maquina,
+    numeroSerie: f.numero_serie || '',
+    tipoAveria: f.observaciones || '',
+    repuestos: (Array.isArray(f.repuestos) ? f.repuestos : []) as RepuestoFicha[],
+    servicios: (Array.isArray(f.servicios) ? f.servicios : []) as ServicioItem[],
+    recomendaciones: 'REPARACIÓN GARANTIZADA POR 20 DÍAS DE LA FECHA DE RETIRO',
+    tecnico: f.mecanico as 'JORGE' | 'JEAN',
+    estado: (f.cliente_direccion === 'ENTREGADA' ? 'ENTREGADA' : 'TALLER') as 'TALLER' | 'ENTREGADA',
+  }));
+};
+
 // Repuestos
 export const getRepuestos = async (): Promise<Repuesto[]> => {
   const { data, error } = await supabase
