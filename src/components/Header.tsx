@@ -1,7 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FileText, Package, Home, LogOut, TrendingUp, Settings } from 'lucide-react';
+import { useState } from 'react';
+import { FileText, Package, Home, LogOut, TrendingUp, Settings, Download } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { exportAllToExcel } from '@/lib/exportExcel';
 import stihlLogo from '@/assets/stihl-logo.jpg';
 
 const Header = () => {
