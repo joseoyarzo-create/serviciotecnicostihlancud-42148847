@@ -1,12 +1,29 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FileText, Package, Home, LogOut, TrendingUp, Settings } from 'lucide-react';
+import { useState } from 'react';
+import { FileText, Package, Home, LogOut, TrendingUp, Settings, Download } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { exportAllToExcel } from '@/lib/exportExcel';
 import stihlLogo from '@/assets/stihl-logo.jpg';
 
 const Header = () => {
   const location = useLocation();
   const { signOut, user } = useAuth();
+  const { toast } = useToast();
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await exportAllToExcel();
+      toast({ title: 'Exportación lista', description: 'Se descargó el Excel con todos los datos.' });
+    } catch (e) {
+      toast({ title: 'Error', description: 'No se pudo exportar.', variant: 'destructive' });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const navItems = [
     { path: '/', label: 'Inicio', icon: Home },
@@ -53,6 +70,20 @@ const Header = () => {
             })}
           </nav>
           
+          {user && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleExport}
+              disabled={exporting}
+              className="flex items-center gap-2"
+              title="Descargar todos los datos en Excel"
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">{exporting ? 'Exportando...' : 'Exportar Excel'}</span>
+            </Button>
+          )}
+
           {user && (
             <Button
               variant="ghost"
