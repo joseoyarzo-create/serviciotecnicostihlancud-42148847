@@ -384,10 +384,28 @@ const FichaTecnicaPage = () => {
               <div className="input-group">
                 <Label className="input-label">Nombre *</Label>
                 <Input
+                  list="clientes-list"
                   value={clienteNombre}
-                  onChange={(e) => setClienteNombre(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setClienteNombre(value);
+                    const match = clientes.find(
+                      (c) => c.nombre.toUpperCase() === value.trim().toUpperCase()
+                    );
+                    if (match) {
+                      setSelectedClienteId(match.id);
+                      setClienteTelefono(match.telefono || '');
+                    } else {
+                      setSelectedClienteId(null);
+                    }
+                  }}
                   placeholder="Nombre del cliente"
                 />
+                <datalist id="clientes-list">
+                  {clientes.map((c) => (
+                    <option key={c.id} value={c.nombre} />
+                  ))}
+                </datalist>
               </div>
 
               <div className="input-group">
