@@ -166,22 +166,35 @@ export const getFichasByClienteNombre = async (nombre: string): Promise<FichaTec
 
 // Repuestos
 export const getRepuestos = async (): Promise<Repuesto[]> => {
-  const { data, error } = await supabase
-    .from('repuestos')
-    .select('*')
-    .order('nombre');
-  
-  if (error) {
-    console.error('Error fetching repuestos:', error);
-    return [];
+  const pageSize = 1000;
+  let from = 0;
+  const all: Repuesto[] = [];
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('repuestos')
+      .select('*')
+      .order('nombre')
+      .range(from, from + pageSize - 1);
+
+    if (error) {
+      console.error('Error fetching repuestos:', error);
+      return all;
+    }
+    if (!data || data.length === 0) break;
+
+    all.push(...data.map(r => ({
+      id: r.id,
+      codigo: r.codigo,
+      nombre: r.nombre,
+      precio: Number(r.precio),
+    })));
+
+    if (data.length < pageSize) break;
+    from += pageSize;
   }
-  
-  return data.map(r => ({
-    id: r.id,
-    codigo: r.codigo,
-    nombre: r.nombre,
-    precio: Number(r.precio),
-  }));
+
+  return all;
 };
 
 export const saveRepuesto = async (repuesto: Repuesto): Promise<void> => {
