@@ -160,7 +160,7 @@ export const getFichasByClienteNombre = async (nombre: string): Promise<FichaTec
     servicios: (Array.isArray(f.servicios) ? f.servicios : []) as ServicioItem[],
     recomendaciones: 'REPARACIÓN GARANTIZADA POR 20 DÍAS DE LA FECHA DE RETIRO',
     tecnico: f.mecanico as 'JORGE' | 'JEAN',
-    estado: (f.cliente_direccion === 'ENTREGADA' ? 'ENTREGADA' : 'TALLER') as 'TALLER' | 'ENTREGADA',
+    estado: (['TALLER','ESPERA_REPUESTO','LISTO','ENTREGADA'].includes(f.cliente_direccion ?? '') ? f.cliente_direccion! : 'TALLER') as import('@/types').EstadoFicha,
   }));
 };
 
@@ -317,7 +317,7 @@ export const getFichas = async (): Promise<FichaTecnica[]> => {
     servicios: (Array.isArray(f.servicios) ? f.servicios : []) as unknown as ServicioItem[],
     recomendaciones: 'REPARACIÓN GARANTIZADA POR 20 DÍAS DE LA FECHA DE RETIRO',
     tecnico: f.mecanico as 'JORGE' | 'JEAN',
-    estado: (f.cliente_direccion === 'ENTREGADA' ? 'ENTREGADA' : 'TALLER') as 'TALLER' | 'ENTREGADA',
+    estado: (['TALLER','ESPERA_REPUESTO','LISTO','ENTREGADA'].includes(f.cliente_direccion ?? '') ? f.cliente_direccion! : 'TALLER') as import('@/types').EstadoFicha,
   }));
 };
 
@@ -352,7 +352,7 @@ export const getFichaById = async (id: string): Promise<FichaTecnica | null> => 
     servicios: (Array.isArray(data.servicios) ? data.servicios : []) as unknown as ServicioItem[],
     recomendaciones: 'REPARACIÓN GARANTIZADA POR 20 DÍAS DE LA FECHA DE RETIRO',
     tecnico: data.mecanico as 'JORGE' | 'JEAN',
-    estado: (data.cliente_direccion === 'ENTREGADA' ? 'ENTREGADA' : 'TALLER') as 'TALLER' | 'ENTREGADA',
+    estado: (['TALLER','ESPERA_REPUESTO','LISTO','ENTREGADA'].includes(data.cliente_direccion ?? '') ? data.cliente_direccion! : 'TALLER') as import('@/types').EstadoFicha,
   };
 };
 
@@ -430,7 +430,7 @@ export const saveFicha = async (ficha: FichaTecnica): Promise<void> => {
   }
 };
 
-export const updateFichaEstado = async (id: string, estado: 'TALLER' | 'ENTREGADA'): Promise<void> => {
+export const updateFichaEstado = async (id: string, estado: import('@/types').EstadoFicha): Promise<void> => {
   const updateData: { cliente_direccion: string; fecha_entrega: string | null } = {
     cliente_direccion: estado,
     fecha_entrega: estado === 'ENTREGADA' ? new Date().toISOString() : null,

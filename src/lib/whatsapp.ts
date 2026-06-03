@@ -35,7 +35,7 @@ function applyTemplate(
 ): string {
   let msg = getTemplate(key);
   for (const [k, v] of Object.entries(vars)) {
-    msg = msg.replaceAll(k, v);
+    msg = msg.split(k).join(v);
   }
   return msg;
 }
