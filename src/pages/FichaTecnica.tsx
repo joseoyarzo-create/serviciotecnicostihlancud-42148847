@@ -19,6 +19,8 @@ import Header from '@/components/Header';
 import RepuestosSelector from '@/components/RepuestosSelector';
 import ServiciosTable, { DEFAULT_SERVICIOS } from '@/components/ServiciosTable';
 import { CalendarIcon, FileText, Save, User, Wrench, FileDown, Printer, Award } from 'lucide-react';
+import WhatsAppButton from '@/components/WhatsAppButton';
+import { mensajeContactoRapido } from '@/lib/whatsapp';
 import { cn } from '@/lib/utils';
 
 const BenefitBadge = ({ label, achieved }: { label: string; achieved: boolean }) => (
@@ -410,11 +412,24 @@ const FichaTecnicaPage = () => {
 
               <div className="input-group">
                 <Label className="input-label">Teléfono</Label>
-                <Input
-                  value={clienteTelefono}
-                  onChange={(e) => setClienteTelefono(e.target.value)}
-                  placeholder="+56 9 1234 5678"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    value={clienteTelefono}
+                    onChange={(e) => setClienteTelefono(e.target.value)}
+                    placeholder="+56 9 1234 5678"
+                    className="flex-1"
+                  />
+                  {clienteTelefono && clienteTelefono.replace(/\D/g, '').length >= 7 && (
+                    <WhatsAppButton
+                      phone={clienteTelefono}
+                      message={mensajeContactoRapido(clienteNombre || 'cliente')}
+                      label="Contactar"
+                      showLabel={false}
+                      size="sm"
+                      className="shrink-0"
+                    />
+                  )}
+                </div>
               </div>
 
               {config?.sistema_puntos_activo && selectedClienteId && (
