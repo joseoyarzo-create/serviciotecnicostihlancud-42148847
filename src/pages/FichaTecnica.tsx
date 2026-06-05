@@ -668,6 +668,40 @@ const FichaTecnicaPage = () => {
               <Printer className="mr-2 h-5 w-5" />
               {isLoading && exportType === 'print' ? 'Imprimiendo...' : 'Guardar e Imprimir'}
             </Button>
+
+            <Button
+              type="button"
+              onClick={() => {
+                if (!numeroBoleta.trim() || !clienteNombre.trim() || !modeloMaquina.trim()) {
+                  toast({ title: 'Datos incompletos', description: 'Boleta, cliente y modelo son requeridos para la etiqueta', variant: 'destructive' });
+                  return;
+                }
+                printThermalLabel({
+                  id: id || 'tmp',
+                  numeroBoleta: numeroBoleta.trim(),
+                  numeroServicio: numeroBoleta.trim(),
+                  fechaIngreso,
+                  fechaReparacion,
+                  fechaEntrega,
+                  cliente: { id: selectedClienteId || 'tmp', nombre: clienteNombre.toUpperCase(), telefono: clienteTelefono },
+                  modeloMaquina,
+                  numeroSerie,
+                  tipoAveria,
+                  repuestos,
+                  servicios,
+                  recomendaciones: '',
+                  tecnico,
+                  estado,
+                });
+              }}
+              size="lg"
+              variant="secondary"
+              className="flex-1 hover-lift"
+              title="Imprimir etiqueta 80mm (Epson TM-T20II)"
+            >
+              <Tag className="mr-2 h-5 w-5" />
+              Etiqueta Térmica
+            </Button>
           </div>
         </div>
       </main>
