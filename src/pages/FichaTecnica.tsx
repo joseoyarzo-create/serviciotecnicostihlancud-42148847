@@ -18,9 +18,10 @@ import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import RepuestosSelector from '@/components/RepuestosSelector';
 import ServiciosTable, { DEFAULT_SERVICIOS } from '@/components/ServiciosTable';
-import { CalendarIcon, FileText, Save, User, Wrench, FileDown, Printer, Award } from 'lucide-react';
+import { CalendarIcon, FileText, Save, User, Wrench, FileDown, Printer, Award, Tag, BookOpen } from 'lucide-react';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import { mensajeContactoRapido } from '@/lib/whatsapp';
+import { printThermalLabel } from '@/lib/thermalLabel';
 import { cn } from '@/lib/utils';
 
 const BenefitBadge = ({ label, achieved }: { label: string; achieved: boolean }) => (
