@@ -532,7 +532,25 @@ const FichaTecnicaPage = () => {
               </div>
 
               <div className="input-group">
-                <Label className="input-label">Modelo de Máquina *</Label>
+                <Label className="input-label flex items-center justify-between gap-2">
+                  <span>Modelo de Máquina *</span>
+                  {(() => {
+                    const found = modelosFull.find((m) => m.modelo === modeloMaquina);
+                    if (found?.despieceUrl) {
+                      return (
+                        <a
+                          href={found.despieceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-primary inline-flex items-center gap-1 underline font-normal"
+                        >
+                          <BookOpen className="h-3 w-3" /> Ver despiece
+                        </a>
+                      );
+                    }
+                    return null;
+                  })()}
+                </Label>
                 <Input
                   value={modeloMaquina}
                   onChange={(e) => setModeloMaquina(e.target.value)}
