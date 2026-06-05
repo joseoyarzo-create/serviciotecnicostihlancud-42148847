@@ -474,6 +474,94 @@ const ClientesPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Duplicate warning when creating */}
+      <Dialog open={dupWarnOpen} onOpenChange={setDupWarnOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Posibles clientes duplicados
+            </DialogTitle>
+            <DialogDescription>
+              Encontramos {dupSimilars.length} cliente(s) similares a "{pendingCliente?.nombre}". ¿Deseas continuar y crear uno nuevo?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1 max-h-64 overflow-y-auto border rounded p-2 bg-muted/30">
+            {dupSimilars.map((c) => (
+              <div key={c.id} className="text-sm flex justify-between border-b last:border-b-0 py-1">
+                <span className="font-medium">{c.nombre}</span>
+                <span className="text-muted-foreground">{c.telefono || '—'}</span>
+              </div>
+            ))}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDupWarnOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={async () => {
+                if (pendingCliente) await proceedSave(pendingCliente);
+                setDupWarnOpen(false);
+                setPendingCliente(null);
+              }}
+            >
+              Crear de todos modos
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Duplicates finder */}
+      <Dialog open={dupFinderOpen} onOpenChange={setDupFinderOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <GitMerge className="h-5 w-5 text-primary" />
+              Fusionar clientes duplicados
+            </DialogTitle>
+            <DialogDescription>
+              Selecciona qué cliente quieres conservar de cada grupo. Las fichas de los demás se reasignarán al elegido.
+            </DialogDescription>
+          </DialogHeader>
+          {duplicateGroups.length === 0 ? (
+            <p className="text-center text-muted-foreground py-6">¡No hay duplicados detectados!</p>
+          ) : (
+            <div className="space-y-4">
+              {duplicateGroups.map((group, idx) => (
+                <div key={idx} className="border rounded-lg p-3">
+                  <div className="text-xs font-semibold uppercase text-muted-foreground mb-2">
+                    Grupo {idx + 1} — {group.length} clientes
+                  </div>
+                  <div className="space-y-1 mb-3">
+                    {group.map((c) => (
+                      <label key={c.id} className="flex items-center gap-2 p-2 rounded hover:bg-muted/40 cursor-pointer text-sm">
+                        <input
+                          type="radio"
+                          name={`keep-${idx}`}
+                          checked={mergeKeepId[idx] === c.id}
+                          onChange={() => setMergeKeepId((m) => ({ ...m, [idx]: c.id }))}
+                        />
+                        <span className="font-medium flex-1">{c.nombre}</span>
+                        <span className="text-muted-foreground">{c.telefono || '—'}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => handleMergeGroup(idx)}
+                    disabled={merging}
+                  >
+                    <GitMerge className="h-4 w-4 mr-1" />
+                    Fusionar grupo
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDupFinderOpen(false)}>Cerrar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
