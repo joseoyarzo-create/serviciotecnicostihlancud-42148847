@@ -270,7 +270,11 @@ const Admin = () => {
               </div>
             </CardContent>
           </Card>
+
+          <WhatsAppTemplatesCard />
+          <ModelosDespieceCard />
         </div>
+
       </main>
     </div>
   );
