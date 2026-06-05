@@ -41,6 +41,9 @@ import {
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { exportStatsToPdf } from '@/lib/statsPdf';
+import { FileDown } from 'lucide-react';
+import { useRef } from 'react';
 
 const calcTotal = (ficha: FichaTecnica) =>
   ficha.repuestos.reduce(
