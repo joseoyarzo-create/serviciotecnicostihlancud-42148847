@@ -399,7 +399,32 @@ const ClientesPage = () => {
           <DialogHeader>
             <DialogTitle>Historial de Servicios - {selectedCliente?.nombre}</DialogTitle>
           </DialogHeader>
-          
+
+          {!loadingHistory && clientFichas.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 my-3">
+              <div className="border rounded p-3 bg-muted/30">
+                <div className="text-[10px] uppercase text-muted-foreground">Total facturado</div>
+                <div className="text-lg font-bold text-green-700 flex items-center gap-1">
+                  <DollarSign className="h-4 w-4" />{fmtCLP(historyStats.total)}
+                </div>
+              </div>
+              <div className="border rounded p-3 bg-muted/30">
+                <div className="text-[10px] uppercase text-muted-foreground">Fichas</div>
+                <div className="text-lg font-bold">{historyStats.count}</div>
+              </div>
+              <div className="border rounded p-3 bg-muted/30">
+                <div className="text-[10px] uppercase text-muted-foreground">Equipos únicos</div>
+                <div className="text-lg font-bold">{historyStats.equipos}</div>
+              </div>
+              <div className="border rounded p-3 bg-muted/30">
+                <div className="text-[10px] uppercase text-muted-foreground">Última visita</div>
+                <div className="text-sm font-semibold">
+                  {historyStats.ultima ? format(historyStats.ultima, "d MMM yyyy", { locale: es }) : '—'}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="mt-4">
             {loadingHistory ? (
               <p className="text-center py-4 text-muted-foreground">Cargando historial...</p>
