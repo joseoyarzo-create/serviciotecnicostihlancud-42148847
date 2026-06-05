@@ -71,6 +71,29 @@ const ClientesPage = () => {
     }
   };
 
+  // Duplicate warning before saving new
+  const [dupWarnOpen, setDupWarnOpen] = useState(false);
+  const [dupSimilars, setDupSimilars] = useState<Cliente[]>([]);
+  const [pendingCliente, setPendingCliente] = useState<Cliente | null>(null);
+
+  // Duplicates finder
+  const [dupFinderOpen, setDupFinderOpen] = useState(false);
+  const [duplicateGroups, setDuplicateGroups] = useState<Cliente[][]>([]);
+  const [mergeKeepId, setMergeKeepId] = useState<Record<number, string>>({});
+  const [merging, setMerging] = useState(false);
+
+  const proceedSave = async (cliente: Cliente) => {
+    try {
+      await saveCliente(cliente);
+      await loadClientes();
+      setNuevoNombre('');
+      setNuevoTelefono('');
+      toast({ title: 'Éxito', description: 'Cliente agregado correctamente' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Error al agregar cliente', variant: 'destructive' });
+    }
+  };
+
   const handleAddCliente = async () => {
     if (!nuevoNombre.trim()) {
       toast({ title: 'Error', description: 'El nombre es requerido', variant: 'destructive' });
@@ -83,28 +106,47 @@ const ClientesPage = () => {
       telefono: nuevoTelefono.trim(),
     };
 
+    const similars = findSimilarClientes(cliente.nombre, clientes);
+    if (similars.length > 0) {
+      setPendingCliente(cliente);
+      setDupSimilars(similars);
+      setDupWarnOpen(true);
+      return;
+    }
+    await proceedSave(cliente);
+  };
+
+  const openDuplicatesFinder = () => {
+    const groups = findDuplicateGroups(clientes);
+    setDuplicateGroups(groups);
+    const initial: Record<number, string> = {};
+    groups.forEach((g, i) => { initial[i] = g[0].id; });
+    setMergeKeepId(initial);
+    setDupFinderOpen(true);
+  };
+
+  const handleMergeGroup = async (idx: number) => {
+    const group = duplicateGroups[idx];
+    if (!group) return;
+    const keepId = mergeKeepId[idx] || group[0].id;
+    const mergeIds = group.filter((c) => c.id !== keepId).map((c) => c.id);
+    if (!mergeIds.length) return;
+    setMerging(true);
     try {
-      await saveCliente(cliente);
+      await mergeClientes(keepId, mergeIds);
+      toast({ title: 'Clientes fusionados', description: `${mergeIds.length + 1} clientes unidos` });
       await loadClientes();
-      setNuevoNombre('');
-      setNuevoTelefono('');
-      toast({ title: 'Éxito', description: 'Cliente agregado correctamente' });
-    } catch (error) {
-      toast({ title: 'Error', description: 'Error al agregar cliente', variant: 'destructive' });
+      // refresh groups
+      const fresh = await getClientes();
+      setDuplicateGroups(findDuplicateGroups(fresh));
+    } catch (e) {
+      console.error(e);
+      toast({ title: 'Error', description: 'No se pudo fusionar', variant: 'destructive' });
+    } finally {
+      setMerging(false);
     }
   };
 
-  const startEdit = (cliente: Cliente) => {
-    setEditingId(cliente.id);
-    setEditNombre(cliente.nombre);
-    setEditTelefono(cliente.telefono);
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditNombre('');
-    setEditTelefono('');
-  };
 
   const saveEdit = async (id: string) => {
     if (!editNombre.trim()) {
