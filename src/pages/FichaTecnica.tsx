@@ -122,6 +122,7 @@ const FichaTecnicaPage = () => {
       
       setClientes(clientesData);
       setModelos(modelosData.map((m: any) => m.modelo));
+      setModelosFull(modelosData.map((m: any) => ({ modelo: m.modelo, despieceUrl: m.despieceUrl })));
 
       if (!id && results[2]) {
         setNumeroBoleta(results[2]);
