@@ -63,6 +63,8 @@ const Stats = () => {
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const chartsRef = useRef<HTMLDivElement>(null);
   const today = new Date();
 
   useEffect(() => {
