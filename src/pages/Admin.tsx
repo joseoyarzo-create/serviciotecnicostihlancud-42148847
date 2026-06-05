@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getConfigSistema, updateConfigParam, ConfigSistema } from '@/lib/cloudStorage';
+import { getConfigSistema, updateConfigParam, ConfigSistema, getModelos, saveModelo, deleteModelo, uploadDespiece, ModeloRow, generateId } from '@/lib/cloudStorage';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -7,8 +7,10 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, ShieldAlert, Award, Info, Wrench, Package } from 'lucide-react';
+import { Settings, ShieldAlert, Award, Info, Wrench, Package, MessageCircle, FileText, Upload, Trash2, ExternalLink, RotateCcw } from 'lucide-react';
+import { TemplateKey, DEFAULT_TEMPLATES, getTemplate, saveTemplate, resetTemplate, TEMPLATE_VARIABLES } from '@/lib/waTemplates';
 
 const Admin = () => {
   const { user } = useAuth();
