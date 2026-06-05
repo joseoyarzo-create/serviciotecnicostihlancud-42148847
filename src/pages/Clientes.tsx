@@ -216,6 +216,14 @@ const ClientesPage = () => {
       c.telefono.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const historyStats = useMemo(() => {
+    const total = clientFichas.reduce((s, f) => s + calcTotal(f), 0);
+    const equipos = new Set(clientFichas.map((f) => f.modeloMaquina).filter(Boolean));
+    const ultima = clientFichas[0]?.fechaIngreso;
+    return { total, equipos: equipos.size, count: clientFichas.length, ultima };
+  }, [clientFichas]);
+
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
