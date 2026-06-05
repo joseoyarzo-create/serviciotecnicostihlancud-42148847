@@ -147,6 +147,18 @@ const ClientesPage = () => {
     }
   };
 
+  const startEdit = (cliente: Cliente) => {
+    setEditingId(cliente.id);
+    setEditNombre(cliente.nombre);
+    setEditTelefono(cliente.telefono);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditNombre('');
+    setEditTelefono('');
+  };
+
 
   const saveEdit = async (id: string) => {
     if (!editNombre.trim()) {
