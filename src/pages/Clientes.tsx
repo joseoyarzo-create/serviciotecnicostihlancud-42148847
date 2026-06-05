@@ -1,20 +1,37 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Cliente, FichaTecnica } from '@/types';
-import { getClientes, saveCliente, deleteCliente, generateId, getFichasByClienteNombre } from '@/lib/cloudStorage';
+import {
+  getClientes,
+  saveCliente,
+  deleteCliente,
+  generateId,
+  getFichasByClienteNombre,
+  findSimilarClientes,
+  findDuplicateGroups,
+  mergeClientes,
+} from '@/lib/cloudStorage';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
-import { Users, Plus, Trash2, Search, Edit2, Check, X, FileText, Calendar } from 'lucide-react';
+import { Users, Plus, Trash2, Search, Edit2, Check, X, FileText, Calendar, AlertTriangle, GitMerge, DollarSign } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+
+const fmtCLP = (n: number) =>
+  new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(n);
+
+const calcTotal = (f: FichaTecnica) =>
+  f.repuestos.reduce((s, r) => s + (r.precioEditado ?? r.precio) * r.cantidad, 0);
 
 const ClientesPage = () => {
   const { toast } = useToast();
