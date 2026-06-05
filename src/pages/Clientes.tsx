@@ -269,10 +269,16 @@ const ClientesPage = () => {
 
           {/* List */}
           <section className="form-section animate-fade-in" style={{ animationDelay: '0.1s' }}>
-            <h2 className="form-section-title flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Directorio de Clientes ({clientes.length})
-            </h2>
+            <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+              <h2 className="form-section-title flex items-center gap-2 mb-0">
+                <Users className="h-5 w-5" />
+                Directorio de Clientes ({clientes.length})
+              </h2>
+              <Button variant="outline" onClick={openDuplicatesFinder}>
+                <GitMerge className="h-4 w-4 mr-2" />
+                Buscar duplicados
+              </Button>
+            </div>
 
             {/* Search */}
             <div className="relative mb-4">
