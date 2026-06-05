@@ -41,6 +41,7 @@ const FichaTecnicaPage = () => {
   const { toast } = useToast();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [modelos, setModelos] = useState<string[]>([]);
+  const [modelosFull, setModelosFull] = useState<{ modelo: string; despieceUrl?: string | null }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(!!id);
   const [exportType, setExportType] = useState<'pdf' | 'print'>('pdf');
