@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import FichaTecnica from "./pages/FichaTecnica";
 import FichaRapida from "./pages/FichaRapida";
 import Repuestos from "./pages/Repuestos";
+import Clientes from "./pages/Clientes";
 import Stats from "./pages/Stats";
 import Admin from "./pages/Admin";
 import Login from "./pages/Login";
