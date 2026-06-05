@@ -280,7 +280,7 @@ const Stats = () => {
         </div>
 
         {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div ref={chartsRef} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Daily Chart — clickable */}
           <Card className="p-6">
             <CardHeader className="px-0 pb-4">
