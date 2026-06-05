@@ -30,6 +30,7 @@ const Header = () => {
     { path: '/ficha-tecnica', label: 'Nueva Ficha', icon: FileText },
     { path: '/ficha-rapida', label: 'Ficha Rápida', icon: Zap },
     { path: '/repuestos', label: 'Repuestos', icon: Package },
+    { path: '/clientes', label: 'Clientes', icon: Users },
     { path: '/stats', label: 'Estadísticas', icon: TrendingUp },
   ];
 
