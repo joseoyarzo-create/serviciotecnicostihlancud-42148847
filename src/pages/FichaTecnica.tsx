@@ -18,9 +18,10 @@ import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import RepuestosSelector from '@/components/RepuestosSelector';
 import ServiciosTable, { DEFAULT_SERVICIOS } from '@/components/ServiciosTable';
-import { CalendarIcon, FileText, Save, User, Wrench, FileDown, Printer, Award } from 'lucide-react';
+import { CalendarIcon, FileText, Save, User, Wrench, FileDown, Printer, Award, Tag, BookOpen } from 'lucide-react';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import { mensajeContactoRapido } from '@/lib/whatsapp';
+import { printThermalLabel } from '@/lib/thermalLabel';
 import { cn } from '@/lib/utils';
 
 const BenefitBadge = ({ label, achieved }: { label: string; achieved: boolean }) => (
@@ -40,6 +41,7 @@ const FichaTecnicaPage = () => {
   const { toast } = useToast();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [modelos, setModelos] = useState<string[]>([]);
+  const [modelosFull, setModelosFull] = useState<{ modelo: string; despieceUrl?: string | null }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(!!id);
   const [exportType, setExportType] = useState<'pdf' | 'print'>('pdf');
@@ -120,6 +122,7 @@ const FichaTecnicaPage = () => {
       
       setClientes(clientesData);
       setModelos(modelosData.map((m: any) => m.modelo));
+      setModelosFull(modelosData.map((m: any) => ({ modelo: m.modelo, despieceUrl: m.despieceUrl })));
 
       if (!id && results[2]) {
         setNumeroBoleta(results[2]);
@@ -529,7 +532,25 @@ const FichaTecnicaPage = () => {
               </div>
 
               <div className="input-group">
-                <Label className="input-label">Modelo de Máquina *</Label>
+                <Label className="input-label flex items-center justify-between gap-2">
+                  <span>Modelo de Máquina *</span>
+                  {(() => {
+                    const found = modelosFull.find((m) => m.modelo === modeloMaquina);
+                    if (found?.despieceUrl) {
+                      return (
+                        <a
+                          href={found.despieceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-primary inline-flex items-center gap-1 underline font-normal"
+                        >
+                          <BookOpen className="h-3 w-3" /> Ver despiece
+                        </a>
+                      );
+                    }
+                    return null;
+                  })()}
+                </Label>
                 <Input
                   value={modeloMaquina}
                   onChange={(e) => setModeloMaquina(e.target.value)}
@@ -646,6 +667,40 @@ const FichaTecnicaPage = () => {
             >
               <Printer className="mr-2 h-5 w-5" />
               {isLoading && exportType === 'print' ? 'Imprimiendo...' : 'Guardar e Imprimir'}
+            </Button>
+
+            <Button
+              type="button"
+              onClick={() => {
+                if (!numeroBoleta.trim() || !clienteNombre.trim() || !modeloMaquina.trim()) {
+                  toast({ title: 'Datos incompletos', description: 'Boleta, cliente y modelo son requeridos para la etiqueta', variant: 'destructive' });
+                  return;
+                }
+                printThermalLabel({
+                  id: id || 'tmp',
+                  numeroBoleta: numeroBoleta.trim(),
+                  numeroServicio: numeroBoleta.trim(),
+                  fechaIngreso,
+                  fechaReparacion,
+                  fechaEntrega,
+                  cliente: { id: selectedClienteId || 'tmp', nombre: clienteNombre.toUpperCase(), telefono: clienteTelefono },
+                  modeloMaquina,
+                  numeroSerie,
+                  tipoAveria,
+                  repuestos,
+                  servicios,
+                  recomendaciones: '',
+                  tecnico,
+                  estado,
+                });
+              }}
+              size="lg"
+              variant="secondary"
+              className="flex-1 hover-lift"
+              title="Imprimir etiqueta 80mm (Epson TM-T20II)"
+            >
+              <Tag className="mr-2 h-5 w-5" />
+              Etiqueta Térmica
             </Button>
           </div>
         </div>

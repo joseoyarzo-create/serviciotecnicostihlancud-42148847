@@ -255,35 +255,121 @@ export const deleteRepuesto = async (id: string): Promise<void> => {
 };
 
 // Modelos
-export const getModelos = async (): Promise<{ id: string; modelo: string }[]> => {
+export interface ModeloRow { id: string; modelo: string; despieceUrl?: string | null; }
+
+export const getModelos = async (): Promise<ModeloRow[]> => {
   const { data, error } = await supabase
     .from('modelos')
     .select('*')
     .order('nombre');
-  
+
   if (error) {
     console.error('Error fetching modelos:', error);
     return [];
   }
-  
-  return data.map(m => ({
+
+  return data.map((m: any) => ({
     id: m.id,
     modelo: m.nombre,
+    despieceUrl: m.despiece_url ?? null,
   }));
 };
 
-export const saveModelo = async (modelo: { id: string; modelo: string }): Promise<void> => {
-  const { error } = await supabase
-    .from('modelos')
-    .upsert({
-      id: modelo.id,
-      nombre: modelo.modelo,
-    }, { onConflict: 'id' });
-  
-  if (error) {
-    console.error('Error saving modelo:', error);
-    throw error;
+export const saveModelo = async (modelo: { id: string; modelo: string; despieceUrl?: string | null }): Promise<void> => {
+  const payload: any = { id: modelo.id, nombre: modelo.modelo };
+  if (modelo.despieceUrl !== undefined) payload.despiece_url = modelo.despieceUrl;
+  const { error } = await supabase.from('modelos').upsert(payload, { onConflict: 'id' });
+  if (error) { console.error('Error saving modelo:', error); throw error; }
+};
+
+export const deleteModelo = async (id: string): Promise<void> => {
+  const { error } = await supabase.from('modelos').delete().eq('id', id);
+  if (error) throw error;
+};
+
+export const uploadDespiece = async (modeloId: string, file: File): Promise<string> => {
+  const ext = (file.name.split('.').pop() || 'pdf').toLowerCase();
+  const path = `${modeloId}-${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from('despieces').upload(path, file, {
+    upsert: true,
+    contentType: file.type || 'application/pdf',
+  });
+  if (error) throw error;
+  const { data } = supabase.storage.from('despieces').getPublicUrl(path);
+  return data.publicUrl;
+};
+
+// Cliente helpers extra
+const normalizeName = (s: string) => s.trim().toUpperCase().replace(/\s+/g, ' ');
+const stripDiacritics = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+function levenshtein(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  if (!m) return n; if (!n) return m;
+  const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+  return dp[m][n];
+}
+
+export const findSimilarClientes = (target: string, clientes: Cliente[]): Cliente[] => {
+  const t = stripDiacritics(normalizeName(target));
+  if (!t) return [];
+  return clientes.filter((c) => {
+    const n = stripDiacritics(normalizeName(c.nombre));
+    if (!n) return false;
+    if (n === t) return true;
+    if (n.includes(t) || t.includes(n)) return true;
+    if (Math.abs(n.length - t.length) <= 2 && levenshtein(n, t) <= 2) return true;
+    return false;
+  });
+};
+
+export const findDuplicateGroups = (clientes: Cliente[]): Cliente[][] => {
+  const seen = new Set<string>();
+  const groups: Cliente[][] = [];
+  for (const c of clientes) {
+    if (seen.has(c.id)) continue;
+    const group = findSimilarClientes(c.nombre, clientes);
+    if (group.length > 1) {
+      group.forEach((g) => seen.add(g.id));
+      groups.push(group);
+    } else {
+      seen.add(c.id);
+    }
   }
+  return groups;
+};
+
+/**
+ * Fusiona varios clientes en uno: reasigna fichas por nombre y elimina duplicados.
+ */
+export const mergeClientes = async (keepId: string, mergeIds: string[]): Promise<void> => {
+  if (!mergeIds.length) return;
+  const { data: keep } = await supabase.from('clientes').select('*').eq('id', keepId).single();
+  if (!keep) throw new Error('Cliente principal no encontrado');
+
+  const { data: others } = await supabase.from('clientes').select('*').in('id', mergeIds);
+  const nombresOrigen = (others || []).map((c: any) => c.nombre).filter(Boolean);
+
+  for (const nombre of nombresOrigen) {
+    await supabase
+      .from('fichas')
+      .update({ cliente_nombre: keep.nombre, cliente_telefono: keep.telefono || null })
+      .ilike('cliente_nombre', nombre);
+  }
+
+  const sumaPuntos = (others || []).reduce((s: number, c: any) => s + (c.puntos || 0), 0);
+  if (sumaPuntos > 0) {
+    await supabase.from('clientes').update({ puntos: (keep.puntos || 0) + sumaPuntos }).eq('id', keepId);
+  }
+
+  await supabase.from('clientes').delete().in('id', mergeIds);
 };
 
 // Fichas Técnicas

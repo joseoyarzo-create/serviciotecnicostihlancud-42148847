@@ -1,20 +1,37 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Cliente, FichaTecnica } from '@/types';
-import { getClientes, saveCliente, deleteCliente, generateId, getFichasByClienteNombre } from '@/lib/cloudStorage';
+import {
+  getClientes,
+  saveCliente,
+  deleteCliente,
+  generateId,
+  getFichasByClienteNombre,
+  findSimilarClientes,
+  findDuplicateGroups,
+  mergeClientes,
+} from '@/lib/cloudStorage';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
-import { Users, Plus, Trash2, Search, Edit2, Check, X, FileText, Calendar } from 'lucide-react';
+import { Users, Plus, Trash2, Search, Edit2, Check, X, FileText, Calendar, AlertTriangle, GitMerge, DollarSign } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+
+const fmtCLP = (n: number) =>
+  new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(n);
+
+const calcTotal = (f: FichaTecnica) =>
+  f.repuestos.reduce((s, r) => s + (r.precioEditado ?? r.precio) * r.cantidad, 0);
 
 const ClientesPage = () => {
   const { toast } = useToast();
@@ -54,6 +71,29 @@ const ClientesPage = () => {
     }
   };
 
+  // Duplicate warning before saving new
+  const [dupWarnOpen, setDupWarnOpen] = useState(false);
+  const [dupSimilars, setDupSimilars] = useState<Cliente[]>([]);
+  const [pendingCliente, setPendingCliente] = useState<Cliente | null>(null);
+
+  // Duplicates finder
+  const [dupFinderOpen, setDupFinderOpen] = useState(false);
+  const [duplicateGroups, setDuplicateGroups] = useState<Cliente[][]>([]);
+  const [mergeKeepId, setMergeKeepId] = useState<Record<number, string>>({});
+  const [merging, setMerging] = useState(false);
+
+  const proceedSave = async (cliente: Cliente) => {
+    try {
+      await saveCliente(cliente);
+      await loadClientes();
+      setNuevoNombre('');
+      setNuevoTelefono('');
+      toast({ title: 'Éxito', description: 'Cliente agregado correctamente' });
+    } catch (error) {
+      toast({ title: 'Error', description: 'Error al agregar cliente', variant: 'destructive' });
+    }
+  };
+
   const handleAddCliente = async () => {
     if (!nuevoNombre.trim()) {
       toast({ title: 'Error', description: 'El nombre es requerido', variant: 'destructive' });
@@ -66,14 +106,44 @@ const ClientesPage = () => {
       telefono: nuevoTelefono.trim(),
     };
 
+    const similars = findSimilarClientes(cliente.nombre, clientes);
+    if (similars.length > 0) {
+      setPendingCliente(cliente);
+      setDupSimilars(similars);
+      setDupWarnOpen(true);
+      return;
+    }
+    await proceedSave(cliente);
+  };
+
+  const openDuplicatesFinder = () => {
+    const groups = findDuplicateGroups(clientes);
+    setDuplicateGroups(groups);
+    const initial: Record<number, string> = {};
+    groups.forEach((g, i) => { initial[i] = g[0].id; });
+    setMergeKeepId(initial);
+    setDupFinderOpen(true);
+  };
+
+  const handleMergeGroup = async (idx: number) => {
+    const group = duplicateGroups[idx];
+    if (!group) return;
+    const keepId = mergeKeepId[idx] || group[0].id;
+    const mergeIds = group.filter((c) => c.id !== keepId).map((c) => c.id);
+    if (!mergeIds.length) return;
+    setMerging(true);
     try {
-      await saveCliente(cliente);
+      await mergeClientes(keepId, mergeIds);
+      toast({ title: 'Clientes fusionados', description: `${mergeIds.length + 1} clientes unidos` });
       await loadClientes();
-      setNuevoNombre('');
-      setNuevoTelefono('');
-      toast({ title: 'Éxito', description: 'Cliente agregado correctamente' });
-    } catch (error) {
-      toast({ title: 'Error', description: 'Error al agregar cliente', variant: 'destructive' });
+      // refresh groups
+      const fresh = await getClientes();
+      setDuplicateGroups(findDuplicateGroups(fresh));
+    } catch (e) {
+      console.error(e);
+      toast({ title: 'Error', description: 'No se pudo fusionar', variant: 'destructive' });
+    } finally {
+      setMerging(false);
     }
   };
 
@@ -88,6 +158,7 @@ const ClientesPage = () => {
     setEditNombre('');
     setEditTelefono('');
   };
+
 
   const saveEdit = async (id: string) => {
     if (!editNombre.trim()) {
@@ -145,6 +216,14 @@ const ClientesPage = () => {
       c.telefono.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const historyStats = useMemo(() => {
+    const total = clientFichas.reduce((s, f) => s + calcTotal(f), 0);
+    const equipos = new Set(clientFichas.map((f) => f.modeloMaquina).filter(Boolean));
+    const ultima = clientFichas[0]?.fechaIngreso;
+    return { total, equipos: equipos.size, count: clientFichas.length, ultima };
+  }, [clientFichas]);
+
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -190,10 +269,16 @@ const ClientesPage = () => {
 
           {/* List */}
           <section className="form-section animate-fade-in" style={{ animationDelay: '0.1s' }}>
-            <h2 className="form-section-title flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Directorio de Clientes ({clientes.length})
-            </h2>
+            <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+              <h2 className="form-section-title flex items-center gap-2 mb-0">
+                <Users className="h-5 w-5" />
+                Directorio de Clientes ({clientes.length})
+              </h2>
+              <Button variant="outline" onClick={openDuplicatesFinder}>
+                <GitMerge className="h-4 w-4 mr-2" />
+                Buscar duplicados
+              </Button>
+            </div>
 
             {/* Search */}
             <div className="relative mb-4">
@@ -314,7 +399,32 @@ const ClientesPage = () => {
           <DialogHeader>
             <DialogTitle>Historial de Servicios - {selectedCliente?.nombre}</DialogTitle>
           </DialogHeader>
-          
+
+          {!loadingHistory && clientFichas.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 my-3">
+              <div className="border rounded p-3 bg-muted/30">
+                <div className="text-[10px] uppercase text-muted-foreground">Total facturado</div>
+                <div className="text-lg font-bold text-green-700 flex items-center gap-1">
+                  <DollarSign className="h-4 w-4" />{fmtCLP(historyStats.total)}
+                </div>
+              </div>
+              <div className="border rounded p-3 bg-muted/30">
+                <div className="text-[10px] uppercase text-muted-foreground">Fichas</div>
+                <div className="text-lg font-bold">{historyStats.count}</div>
+              </div>
+              <div className="border rounded p-3 bg-muted/30">
+                <div className="text-[10px] uppercase text-muted-foreground">Equipos únicos</div>
+                <div className="text-lg font-bold">{historyStats.equipos}</div>
+              </div>
+              <div className="border rounded p-3 bg-muted/30">
+                <div className="text-[10px] uppercase text-muted-foreground">Última visita</div>
+                <div className="text-sm font-semibold">
+                  {historyStats.ultima ? format(historyStats.ultima, "d MMM yyyy", { locale: es }) : '—'}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="mt-4">
             {loadingHistory ? (
               <p className="text-center py-4 text-muted-foreground">Cargando historial...</p>
@@ -362,6 +472,94 @@ const ClientesPage = () => {
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Duplicate warning when creating */}
+      <Dialog open={dupWarnOpen} onOpenChange={setDupWarnOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Posibles clientes duplicados
+            </DialogTitle>
+            <DialogDescription>
+              Encontramos {dupSimilars.length} cliente(s) similares a "{pendingCliente?.nombre}". ¿Deseas continuar y crear uno nuevo?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1 max-h-64 overflow-y-auto border rounded p-2 bg-muted/30">
+            {dupSimilars.map((c) => (
+              <div key={c.id} className="text-sm flex justify-between border-b last:border-b-0 py-1">
+                <span className="font-medium">{c.nombre}</span>
+                <span className="text-muted-foreground">{c.telefono || '—'}</span>
+              </div>
+            ))}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDupWarnOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={async () => {
+                if (pendingCliente) await proceedSave(pendingCliente);
+                setDupWarnOpen(false);
+                setPendingCliente(null);
+              }}
+            >
+              Crear de todos modos
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Duplicates finder */}
+      <Dialog open={dupFinderOpen} onOpenChange={setDupFinderOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <GitMerge className="h-5 w-5 text-primary" />
+              Fusionar clientes duplicados
+            </DialogTitle>
+            <DialogDescription>
+              Selecciona qué cliente quieres conservar de cada grupo. Las fichas de los demás se reasignarán al elegido.
+            </DialogDescription>
+          </DialogHeader>
+          {duplicateGroups.length === 0 ? (
+            <p className="text-center text-muted-foreground py-6">¡No hay duplicados detectados!</p>
+          ) : (
+            <div className="space-y-4">
+              {duplicateGroups.map((group, idx) => (
+                <div key={idx} className="border rounded-lg p-3">
+                  <div className="text-xs font-semibold uppercase text-muted-foreground mb-2">
+                    Grupo {idx + 1} — {group.length} clientes
+                  </div>
+                  <div className="space-y-1 mb-3">
+                    {group.map((c) => (
+                      <label key={c.id} className="flex items-center gap-2 p-2 rounded hover:bg-muted/40 cursor-pointer text-sm">
+                        <input
+                          type="radio"
+                          name={`keep-${idx}`}
+                          checked={mergeKeepId[idx] === c.id}
+                          onChange={() => setMergeKeepId((m) => ({ ...m, [idx]: c.id }))}
+                        />
+                        <span className="font-medium flex-1">{c.nombre}</span>
+                        <span className="text-muted-foreground">{c.telefono || '—'}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => handleMergeGroup(idx)}
+                    disabled={merging}
+                  >
+                    <GitMerge className="h-4 w-4 mr-1" />
+                    Fusionar grupo
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDupFinderOpen(false)}>Cerrar</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
-import { FileText, Package, Home, LogOut, TrendingUp, Settings, Download, Zap } from 'lucide-react';
+import { FileText, Package, Home, LogOut, TrendingUp, Settings, Download, Zap, Users } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -30,6 +30,7 @@ const Header = () => {
     { path: '/ficha-tecnica', label: 'Nueva Ficha', icon: FileText },
     { path: '/ficha-rapida', label: 'Ficha Rápida', icon: Zap },
     { path: '/repuestos', label: 'Repuestos', icon: Package },
+    { path: '/clientes', label: 'Clientes', icon: Users },
     { path: '/stats', label: 'Estadísticas', icon: TrendingUp },
   ];
 

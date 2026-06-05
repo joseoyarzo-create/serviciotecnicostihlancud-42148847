@@ -41,6 +41,9 @@ import {
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { exportStatsToPdf } from '@/lib/statsPdf';
+import { FileDown } from 'lucide-react';
+import { useRef } from 'react';
 
 const calcTotal = (ficha: FichaTecnica) =>
   ficha.repuestos.reduce(
@@ -60,6 +63,8 @@ const Stats = () => {
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const chartsRef = useRef<HTMLDivElement>(null);
   const today = new Date();
 
   useEffect(() => {
@@ -144,9 +149,24 @@ const Stats = () => {
       <Header />
 
       <main className="container mx-auto py-8 px-4 space-y-8">
-        <div className="flex items-center gap-3">
-          <TrendingUp className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-heading font-bold">Panel de Estadísticas</h1>
+        <div className="flex items-center gap-3 justify-between flex-wrap">
+          <div className="flex items-center gap-3">
+            <TrendingUp className="h-8 w-8 text-primary" />
+            <h1 className="text-3xl font-heading font-bold">Panel de Estadísticas</h1>
+          </div>
+          <Button
+            onClick={async () => {
+              setExportingPdf(true);
+              try {
+                await exportStatsToPdf(fichas, monthlyFichas, currentMonth, chartsRef.current);
+              } finally { setExportingPdf(false); }
+            }}
+            disabled={exportingPdf}
+            variant="outline"
+          >
+            <FileDown className="h-4 w-4 mr-2" />
+            {exportingPdf ? 'Exportando...' : 'Exportar PDF'}
+          </Button>
         </div>
 
         {/* Month Navigator */}
@@ -260,7 +280,7 @@ const Stats = () => {
         </div>
 
         {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div ref={chartsRef} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Daily Chart — clickable */}
           <Card className="p-6">
             <CardHeader className="px-0 pb-4">

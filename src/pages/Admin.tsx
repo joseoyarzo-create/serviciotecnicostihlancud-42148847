@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getConfigSistema, updateConfigParam, ConfigSistema } from '@/lib/cloudStorage';
+import { getConfigSistema, updateConfigParam, ConfigSistema, getModelos, saveModelo, deleteModelo, uploadDespiece, ModeloRow, generateId } from '@/lib/cloudStorage';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -7,8 +7,10 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, ShieldAlert, Award, Info, Wrench, Package } from 'lucide-react';
+import { Settings, ShieldAlert, Award, Info, Wrench, Package, MessageCircle, FileText, Upload, Trash2, ExternalLink, RotateCcw } from 'lucide-react';
+import { TemplateKey, DEFAULT_TEMPLATES, getTemplate, saveTemplate, resetTemplate, TEMPLATE_VARIABLES } from '@/lib/waTemplates';
 
 const Admin = () => {
   const { user } = useAuth();
@@ -268,9 +270,222 @@ const Admin = () => {
               </div>
             </CardContent>
           </Card>
+
+          <WhatsAppTemplatesCard />
+          <ModelosDespieceCard />
         </div>
+
       </main>
     </div>
+  );
+};
+
+// ============ WhatsApp Templates ============
+const TEMPLATE_LABELS: Record<TemplateKey, string> = {
+  equipoListo: 'Equipo listo para retirar',
+  recordatorio: 'Recordatorio (equipo sin retirar)',
+  contacto: 'Contacto rápido',
+};
+
+const WhatsAppTemplatesCard = () => {
+  const { toast } = useToast();
+  const keys: TemplateKey[] = ['equipoListo', 'recordatorio', 'contacto'];
+  const [values, setValues] = useState<Record<TemplateKey, string>>({
+    equipoListo: getTemplate('equipoListo'),
+    recordatorio: getTemplate('recordatorio'),
+    contacto: getTemplate('contacto'),
+  });
+
+  const handleSave = (k: TemplateKey) => {
+    saveTemplate(k, values[k]);
+    toast({ title: 'Plantilla guardada', description: TEMPLATE_LABELS[k] });
+  };
+  const handleReset = (k: TemplateKey) => {
+    resetTemplate(k);
+    setValues((v) => ({ ...v, [k]: DEFAULT_TEMPLATES[k] }));
+    toast({ title: 'Plantilla restaurada', description: TEMPLATE_LABELS[k] });
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <MessageCircle className="h-5 w-5 text-green-600" />
+          Plantillas de WhatsApp
+        </CardTitle>
+        <CardDescription>
+          Edita los mensajes enviados desde la app. Usa las variables disponibles entre {'{llaves}'}.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {keys.map((k) => (
+          <div key={k} className="p-4 border rounded-lg space-y-2">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <Label className="font-semibold text-base">{TEMPLATE_LABELS[k]}</Label>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => handleReset(k)}>
+                  <RotateCcw className="h-4 w-4 mr-1" /> Restaurar
+                </Button>
+                <Button size="sm" onClick={() => handleSave(k)}>Guardar</Button>
+              </div>
+            </div>
+            <Textarea
+              rows={8}
+              value={values[k]}
+              onChange={(e) => setValues((v) => ({ ...v, [k]: e.target.value }))}
+              className="font-mono text-xs"
+            />
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {TEMPLATE_VARIABLES[k].map((v) => (
+                <span key={v.key} className="text-[10px] bg-muted px-2 py-0.5 rounded font-mono" title={v.desc}>
+                  {v.key}
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+};
+
+// ============ Modelos & Despieces ============
+const ModelosDespieceCard = () => {
+  const { toast } = useToast();
+  const [modelos, setModelos] = useState<ModeloRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [newModelo, setNewModelo] = useState('');
+  const [search, setSearch] = useState('');
+
+  const load = async () => {
+    setLoading(true);
+    try { setModelos(await getModelos()); } finally { setLoading(false); }
+  };
+  useEffect(() => { load(); }, []);
+
+  const handleAdd = async () => {
+    if (!newModelo.trim()) return;
+    await saveModelo({ id: generateId(), modelo: newModelo.trim().toUpperCase() });
+    setNewModelo('');
+    await load();
+    toast({ title: 'Modelo agregado' });
+  };
+
+  const handleUpload = async (m: ModeloRow, file: File) => {
+    setUploadingId(m.id);
+    try {
+      const url = await uploadDespiece(m.id, file);
+      await saveModelo({ id: m.id, modelo: m.modelo, despieceUrl: url });
+      await load();
+      toast({ title: 'Despiece subido', description: m.modelo });
+    } catch (e) {
+      console.error(e);
+      toast({ title: 'Error', description: 'No se pudo subir el despiece', variant: 'destructive' });
+    } finally {
+      setUploadingId(null);
+    }
+  };
+
+  const handleRemoveDespiece = async (m: ModeloRow) => {
+    await saveModelo({ id: m.id, modelo: m.modelo, despieceUrl: null });
+    await load();
+    toast({ title: 'Despiece eliminado del modelo' });
+  };
+
+  const handleDelete = async (m: ModeloRow) => {
+    if (!confirm(`¿Eliminar modelo "${m.modelo}"?`)) return;
+    await deleteModelo(m.id);
+    await load();
+  };
+
+  const filtered = modelos.filter((m) => m.modelo.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <FileText className="h-5 w-5 text-primary" />
+          Modelos y Despieces (PDF)
+        </CardTitle>
+        <CardDescription>
+          Sube el PDF de despiece de cada modelo. Estará disponible al abrir la ficha técnica.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex gap-2 flex-wrap">
+          <Input
+            placeholder="Nuevo modelo (ej: MS 250)"
+            value={newModelo}
+            onChange={(e) => setNewModelo(e.target.value)}
+            className="max-w-xs"
+          />
+          <Button onClick={handleAdd}>Agregar</Button>
+          <Input
+            placeholder="Buscar..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="max-w-xs ml-auto"
+          />
+        </div>
+        <div className="max-h-[400px] overflow-y-auto border rounded">
+          <table className="w-full text-sm">
+            <thead className="bg-muted sticky top-0">
+              <tr>
+                <th className="text-left p-2">Modelo</th>
+                <th className="text-left p-2">Despiece</th>
+                <th className="text-right p-2 w-48">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={3} className="text-center p-4 text-muted-foreground">Cargando...</td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={3} className="text-center p-4 text-muted-foreground">Sin modelos</td></tr>
+              ) : filtered.map((m) => (
+                <tr key={m.id} className="border-t">
+                  <td className="p-2 font-medium">{m.modelo}</td>
+                  <td className="p-2">
+                    {m.despieceUrl ? (
+                      <a href={m.despieceUrl} target="_blank" rel="noopener noreferrer"
+                         className="text-primary inline-flex items-center gap-1 underline">
+                        <ExternalLink className="h-3 w-3" /> Ver PDF
+                      </a>
+                    ) : <span className="text-muted-foreground">—</span>}
+                  </td>
+                  <td className="p-2 text-right">
+                    <div className="flex justify-end gap-1">
+                      <label className="inline-flex">
+                        <input
+                          type="file"
+                          accept="application/pdf,image/*"
+                          className="hidden"
+                          onChange={(e) => e.target.files?.[0] && handleUpload(m, e.target.files[0])}
+                        />
+                        <Button size="sm" variant="outline" asChild disabled={uploadingId === m.id}>
+                          <span className="cursor-pointer">
+                            <Upload className="h-4 w-4 mr-1" />
+                            {uploadingId === m.id ? '...' : (m.despieceUrl ? 'Reemplazar' : 'Subir')}
+                          </span>
+                        </Button>
+                      </label>
+                      {m.despieceUrl && (
+                        <Button size="sm" variant="outline" onClick={() => handleRemoveDespiece(m)} title="Quitar despiece">
+                          <Trash2 className="h-4 w-4 text-amber-600" />
+                        </Button>
+                      )}
+                      <Button size="sm" variant="destructive" onClick={() => handleDelete(m)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
