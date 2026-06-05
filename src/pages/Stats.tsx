@@ -149,9 +149,24 @@ const Stats = () => {
       <Header />
 
       <main className="container mx-auto py-8 px-4 space-y-8">
-        <div className="flex items-center gap-3">
-          <TrendingUp className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-heading font-bold">Panel de Estadísticas</h1>
+        <div className="flex items-center gap-3 justify-between flex-wrap">
+          <div className="flex items-center gap-3">
+            <TrendingUp className="h-8 w-8 text-primary" />
+            <h1 className="text-3xl font-heading font-bold">Panel de Estadísticas</h1>
+          </div>
+          <Button
+            onClick={async () => {
+              setExportingPdf(true);
+              try {
+                await exportStatsToPdf(fichas, monthlyFichas, currentMonth, chartsRef.current);
+              } finally { setExportingPdf(false); }
+            }}
+            disabled={exportingPdf}
+            variant="outline"
+          >
+            <FileDown className="h-4 w-4 mr-2" />
+            {exportingPdf ? 'Exportando...' : 'Exportar PDF'}
+          </Button>
         </div>
 
         {/* Month Navigator */}
