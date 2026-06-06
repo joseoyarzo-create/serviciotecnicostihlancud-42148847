@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getConfigSistema, updateConfigParam, ConfigSistema, getModelos, saveModelo, deleteModelo, uploadDespiece, ModeloRow, generateId } from '@/lib/cloudStorage';
+import { getConfigSistema, updateConfigParam, ConfigSistema, getModelos, saveModelo, deleteModelo, uploadDespiece, getDespieceUrl, ModeloRow, generateId } from '@/lib/cloudStorage';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
