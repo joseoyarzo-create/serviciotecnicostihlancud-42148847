@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { FichaTecnica, Cliente, RepuestoFicha, Tecnico, EstadoFicha } from '@/types';
-import { getClientes, saveCliente, saveFicha, generateId, getModelos, saveModelo, getFichaById, getConfigSistema, ConfigSistema, getNextFolio } from '@/lib/cloudStorage';
+import { getClientes, saveCliente, saveFicha, generateId, getModelos, saveModelo, getFichaById, getConfigSistema, ConfigSistema, getNextFolio, getDespieceUrl } from '@/lib/cloudStorage';
 
 import { generatePdfDocument, printFicha } from '@/lib/generatePdf';
 import { Input } from '@/components/ui/input';
