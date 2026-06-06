@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { FichaTecnica, Cliente, RepuestoFicha, Tecnico, EstadoFicha } from '@/types';
-import { getClientes, saveCliente, saveFicha, generateId, getModelos, saveModelo, getFichaById, getConfigSistema, ConfigSistema, getNextFolio } from '@/lib/cloudStorage';
+import { getClientes, saveCliente, saveFicha, generateId, getModelos, saveModelo, getFichaById, getConfigSistema, ConfigSistema, getNextFolio, getDespieceUrl } from '@/lib/cloudStorage';
 
 import { generatePdfDocument, printFicha } from '@/lib/generatePdf';
 import { Input } from '@/components/ui/input';
@@ -538,14 +538,20 @@ const FichaTecnicaPage = () => {
                     const found = modelosFull.find((m) => m.modelo === modeloMaquina);
                     if (found?.despieceUrl) {
                       return (
-                        <a
-                          href={found.despieceUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const url = await getDespieceUrl(found.despieceUrl!);
+                              window.open(url, '_blank', 'noopener,noreferrer');
+                            } catch {
+                              toast({ title: 'No se pudo abrir el despiece', variant: 'destructive' });
+                            }
+                          }}
                           className="text-xs text-primary inline-flex items-center gap-1 underline font-normal"
                         >
                           <BookOpen className="h-3 w-3" /> Ver despiece
-                        </a>
+                        </button>
                       );
                     }
                     return null;

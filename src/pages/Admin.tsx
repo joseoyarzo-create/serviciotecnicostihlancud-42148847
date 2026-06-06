@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getConfigSistema, updateConfigParam, ConfigSistema, getModelos, saveModelo, deleteModelo, uploadDespiece, ModeloRow, generateId } from '@/lib/cloudStorage';
+import { getConfigSistema, updateConfigParam, ConfigSistema, getModelos, saveModelo, deleteModelo, uploadDespiece, getDespieceUrl, ModeloRow, generateId } from '@/lib/cloudStorage';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -447,10 +447,20 @@ const ModelosDespieceCard = () => {
                   <td className="p-2 font-medium">{m.modelo}</td>
                   <td className="p-2">
                     {m.despieceUrl ? (
-                      <a href={m.despieceUrl} target="_blank" rel="noopener noreferrer"
-                         className="text-primary inline-flex items-center gap-1 underline">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const url = await getDespieceUrl(m.despieceUrl!);
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                          } catch {
+                            toast({ title: 'No se pudo abrir el despiece', variant: 'destructive' });
+                          }
+                        }}
+                        className="text-primary inline-flex items-center gap-1 underline"
+                      >
                         <ExternalLink className="h-3 w-3" /> Ver PDF
-                      </a>
+                      </button>
                     ) : <span className="text-muted-foreground">—</span>}
                   </td>
                   <td className="p-2 text-right">
