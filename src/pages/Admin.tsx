@@ -277,6 +277,7 @@ const Admin = () => {
           </Card>
 
           <WhatsAppTemplatesCard />
+          <BulkEntregadasCard />
           <ModelosDespieceCard />
         </div>
 
