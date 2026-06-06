@@ -9,7 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, ShieldAlert, Award, Info, Wrench, Package, MessageCircle, FileText, Upload, Trash2, ExternalLink, RotateCcw } from 'lucide-react';
+import { Settings, ShieldAlert, Award, Info, Wrench, Package, MessageCircle, FileText, Upload, Trash2, ExternalLink, RotateCcw, CheckCircle2, Search } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import type { FichaTecnica } from '@/types';
+import { estadoLabel, estadoColor } from '@/types';
 import { TemplateKey, DEFAULT_TEMPLATES, getTemplate, saveTemplate, resetTemplate, TEMPLATE_VARIABLES } from '@/lib/waTemplates';
 
 const Admin = () => {
