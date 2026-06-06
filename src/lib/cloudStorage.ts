@@ -295,8 +295,22 @@ export const uploadDespiece = async (modeloId: string, file: File): Promise<stri
     contentType: file.type || 'application/pdf',
   });
   if (error) throw error;
-  const { data } = supabase.storage.from('despieces').getPublicUrl(path);
-  return data.publicUrl;
+  // Store the storage path (not a URL). We'll generate signed URLs on demand.
+  return path;
+};
+
+/**
+ * Returns a temporary signed URL for a despiece. Accepts either a stored path
+ * or a legacy full URL (returns it as-is for backwards compatibility).
+ */
+export const getDespieceUrl = async (pathOrUrl: string, expiresInSec = 3600): Promise<string> => {
+  if (!pathOrUrl) return '';
+  if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+  const { data, error } = await supabase.storage
+    .from('despieces')
+    .createSignedUrl(pathOrUrl, expiresInSec);
+  if (error || !data) throw error || new Error('No se pudo generar URL del despiece');
+  return data.signedUrl;
 };
 
 // Cliente helpers extra
