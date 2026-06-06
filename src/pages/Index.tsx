@@ -412,9 +412,24 @@ const Index = () => {
                       <td>{format(ficha.fechaIngreso, 'dd/MM/yyyy', { locale: es })}</td>
                       <td>{ficha.tecnico}</td>
                       <td>
-                        <Badge className={estadoColor(ficha.estado)}>
-                          {estadoLabel(ficha.estado)}
-                        </Badge>
+                        <Select
+                          value={ficha.estado}
+                          onValueChange={(v) => handleStatusChange(ficha.id, v as EstadoFicha)}
+                        >
+                          <SelectTrigger className={`h-8 w-[160px] text-xs font-semibold ${estadoColor(ficha.estado)}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ESTADOS_FICHA.map((e) => (
+                              <SelectItem key={e.value} value={e.value}>
+                                <span className="inline-flex items-center gap-2">
+                                  <span className={`h-2 w-2 rounded-full ${e.color.split(' ')[0]}`} />
+                                  {e.label}
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </td>
                       <td>
                         <div className="flex gap-1 flex-wrap">
@@ -431,15 +446,6 @@ const Index = () => {
                                   Editar
                                 </Link>
                               </DropdownMenuItem>
-                              {ESTADOS_FICHA.filter(e => e.value !== ficha.estado).map(e => (
-                                <DropdownMenuItem
-                                  key={e.value}
-                                  onClick={() => handleStatusChange(ficha.id, e.value)}
-                                >
-                                  <span className={`mr-2 h-2 w-2 rounded-full inline-block ${e.color.split(' ')[0]}`} />
-                                  {e.label}
-                                </DropdownMenuItem>
-                              ))}
                               <DropdownMenuItem onClick={() => handleDownloadPdf(ficha)}>
                                 <FileDown className="mr-2 h-4 w-4" />
                                 Descargar PDF
