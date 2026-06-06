@@ -547,6 +547,33 @@ export const updateFichaEstado = async (id: string, estado: import('@/types').Es
   }
 };
 
+/**
+ * Marca varias fichas con el mismo estado en una sola llamada (hasta cientos a la vez).
+ */
+export const bulkUpdateFichaEstado = async (
+  ids: string[],
+  estado: import('@/types').EstadoFicha,
+): Promise<void> => {
+  if (!ids.length) return;
+  const updateData: { cliente_direccion: string; fecha_entrega: string | null } = {
+    cliente_direccion: estado,
+    fecha_entrega: estado === 'ENTREGADA' ? new Date().toISOString() : null,
+  };
+  // Particionar en lotes por si la URL crece demasiado
+  const chunkSize = 200;
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    const chunk = ids.slice(i, i + chunkSize);
+    const { error } = await supabase
+      .from('fichas')
+      .update(updateData)
+      .in('id', chunk);
+    if (error) {
+      console.error('Error bulk updating fichas:', error);
+      throw error;
+    }
+  }
+};
+
 export const deleteFicha = async (id: string): Promise<void> => {
   const { error } = await supabase
     .from('fichas')

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getConfigSistema, updateConfigParam, ConfigSistema, getModelos, saveModelo, deleteModelo, uploadDespiece, getDespieceUrl, ModeloRow, generateId } from '@/lib/cloudStorage';
+import { getConfigSistema, updateConfigParam, ConfigSistema, getModelos, saveModelo, deleteModelo, uploadDespiece, getDespieceUrl, ModeloRow, generateId, getFichas, bulkUpdateFichaEstado } from '@/lib/cloudStorage';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -9,7 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, ShieldAlert, Award, Info, Wrench, Package, MessageCircle, FileText, Upload, Trash2, ExternalLink, RotateCcw } from 'lucide-react';
+import { Settings, ShieldAlert, Award, Info, Wrench, Package, MessageCircle, FileText, Upload, Trash2, ExternalLink, RotateCcw, CheckCircle2, Search } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import type { FichaTecnica } from '@/types';
+import { estadoLabel, estadoColor } from '@/types';
 import { TemplateKey, DEFAULT_TEMPLATES, getTemplate, saveTemplate, resetTemplate, TEMPLATE_VARIABLES } from '@/lib/waTemplates';
 
 const Admin = () => {
@@ -272,6 +277,7 @@ const Admin = () => {
           </Card>
 
           <WhatsAppTemplatesCard />
+          <BulkEntregadasCard />
           <ModelosDespieceCard />
         </div>
 
@@ -491,6 +497,175 @@ const ModelosDespieceCard = () => {
                   </td>
                 </tr>
               ))}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// ============ Bulk: marcar fichas como ENTREGADAS ============
+const BulkEntregadasCard = () => {
+  const { toast } = useToast();
+  const [fichas, setFichas] = useState<FichaTecnica[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const MAX = 500;
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const all = await getFichas();
+      setFichas(all.filter((f) => f.estado !== 'ENTREGADA'));
+      setSelected(new Set());
+    } catch {
+      toast({ title: 'Error', description: 'No se pudieron cargar las fichas', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const filtered = fichas.filter((f) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      f.numeroServicio.toLowerCase().includes(q) ||
+      f.cliente.nombre.toLowerCase().includes(q) ||
+      f.modeloMaquina.toLowerCase().includes(q)
+    );
+  });
+
+  const toggle = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        if (next.size >= MAX) {
+          toast({ title: `Máximo ${MAX}`, description: `Solo puedes seleccionar hasta ${MAX} fichas a la vez.`, variant: 'destructive' });
+          return prev;
+        }
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const selectVisible = () => {
+    const next = new Set(selected);
+    for (const f of filtered) {
+      if (next.size >= MAX) break;
+      next.add(f.id);
+    }
+    setSelected(next);
+  };
+
+  const clearSel = () => setSelected(new Set());
+
+  const handleMarkDelivered = async () => {
+    if (!selected.size) return;
+    if (!confirm(`¿Marcar ${selected.size} ficha(s) como ENTREGADAS? Esta acción no se puede deshacer en lote.`)) return;
+    setSaving(true);
+    try {
+      await bulkUpdateFichaEstado(Array.from(selected), 'ENTREGADA');
+      toast({ title: 'Listo', description: `${selected.size} ficha(s) marcadas como entregadas.` });
+      await load();
+    } catch {
+      toast({ title: 'Error', description: 'No se pudo completar la actualización masiva.', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <CheckCircle2 className="h-5 w-5 text-green-600" />
+          Marcar Entregadas en Lote
+        </CardTitle>
+        <CardDescription>
+          Selecciona hasta {MAX} fichas pendientes y márcalas como ENTREGADAS de una sola vez.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-col md:flex-row gap-2 md:items-center md:justify-between">
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por N° servicio, cliente o modelo..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={selectVisible} disabled={!filtered.length}>
+              Seleccionar visibles
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={clearSel} disabled={!selected.size}>
+              Limpiar selección
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white"
+              disabled={!selected.size || saving}
+              onClick={handleMarkDelivered}
+            >
+              <CheckCircle2 className="h-4 w-4 mr-1" />
+              {saving ? 'Guardando...' : `Marcar ${selected.size} como ENTREGADAS`}
+            </Button>
+          </div>
+        </div>
+
+        <div className="text-xs text-muted-foreground">
+          Pendientes: <strong>{fichas.length}</strong> · Mostrando: <strong>{filtered.length}</strong> · Seleccionadas: <strong>{selected.size}</strong> / {MAX}
+        </div>
+
+        <div className="border rounded-lg max-h-[480px] overflow-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 sticky top-0">
+              <tr>
+                <th className="w-10 p-2"></th>
+                <th className="text-left p-2">N°</th>
+                <th className="text-left p-2">Cliente</th>
+                <th className="text-left p-2">Modelo</th>
+                <th className="text-left p-2">Ingreso</th>
+                <th className="text-left p-2">Técnico</th>
+                <th className="text-left p-2">Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={7} className="p-4 text-center text-muted-foreground">Cargando...</td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={7} className="p-4 text-center text-muted-foreground">No hay fichas pendientes.</td></tr>
+              ) : filtered.map((f) => {
+                const checked = selected.has(f.id);
+                return (
+                  <tr key={f.id} className={`border-t ${checked ? 'bg-green-50' : ''}`}>
+                    <td className="p-2">
+                      <Checkbox checked={checked} onCheckedChange={() => toggle(f.id)} />
+                    </td>
+                    <td className="p-2 font-mono font-semibold">{f.numeroServicio}</td>
+                    <td className="p-2">{f.cliente.nombre}</td>
+                    <td className="p-2">{f.modeloMaquina}</td>
+                    <td className="p-2">{format(new Date(f.fechaIngreso), 'dd/MM/yyyy', { locale: es })}</td>
+                    <td className="p-2">{f.tecnico}</td>
+                    <td className="p-2">
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${estadoColor(f.estado)}`}>
+                        {estadoLabel(f.estado)}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
