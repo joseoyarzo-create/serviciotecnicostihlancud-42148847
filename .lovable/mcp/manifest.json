@@ -1,0 +1,143 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://bpqqjqeygpqjpykiagtj.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "stihl-ancud-mcp",
+      "version": "0.1.0",
+      "title": "STIHL Ancud - Taller"
+    },
+    "tools": [
+      {
+        "name": "list_fichas",
+        "title": "Listar fichas técnicas",
+        "description": "Lista las fichas técnicas del taller. Permite filtrar por estado (TALLER, ESPERA_REPUESTO, LISTO, ENTREGADA) y limitar la cantidad.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "estado": {
+              "type": "string",
+              "enum": [
+                "TALLER",
+                "ESPERA_REPUESTO",
+                "LISTO",
+                "ENTREGADA"
+              ],
+              "description": "Filtrar por estado de la ficha"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "Máximo de resultados (por defecto 50)"
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "search_cliente",
+        "title": "Buscar cliente",
+        "description": "Busca clientes por nombre o teléfono (coincidencia parcial, mayúsculas/minúsculas ignoradas).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Nombre o teléfono a buscar"
+            }
+          },
+          "required": [
+            "query"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "search_repuesto",
+        "title": "Buscar repuesto",
+        "description": "Busca repuestos por nombre o código (coincidencia parcial). Devuelve código, nombre y precio.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Nombre o código del repuesto"
+            }
+          },
+          "required": [
+            "query"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_ficha_estado",
+        "title": "Actualizar estado de ficha",
+        "description": "Cambia el estado de una ficha técnica. Si el nuevo estado es ENTREGADA, registra la fecha de entrega automáticamente.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "ID de la ficha"
+            },
+            "estado": {
+              "type": "string",
+              "enum": [
+                "TALLER",
+                "ESPERA_REPUESTO",
+                "LISTO",
+                "ENTREGADA"
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "estado"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
