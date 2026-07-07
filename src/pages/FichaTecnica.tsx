@@ -48,8 +48,10 @@ const FichaTecnicaPage = () => {
   const [isFetching, setIsFetching] = useState(!!id);
   const [exportType, setExportType] = useState<'pdf' | 'print'>('pdf');
   const [waDialogOpen, setWaDialogOpen] = useState(false);
-  const [waSent, setWaSent] = useState(false);
+  const [waOpened, setWaOpened] = useState(false);
+  const [waConfirmed, setWaConfirmed] = useState(false);
   const [pendingType, setPendingType] = useState<'pdf' | 'print' | null>(null);
+  const waSent = waOpened && waConfirmed;
 
 
 
