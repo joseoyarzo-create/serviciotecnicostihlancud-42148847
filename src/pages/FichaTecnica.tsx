@@ -18,11 +18,12 @@ import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import RepuestosSelector from '@/components/RepuestosSelector';
 import ServiciosTable, { DEFAULT_SERVICIOS } from '@/components/ServiciosTable';
-import { CalendarIcon, FileText, Save, User, Wrench, FileDown, Printer, Award, Tag, BookOpen } from 'lucide-react';
+import { CalendarIcon, FileText, Save, User, Wrench, FileDown, Printer, Award, Tag, BookOpen, CheckCircle2, AlertCircle } from 'lucide-react';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import { mensajeContactoRapido, mensajeEquipoListo, buildWhatsAppUrl } from '@/lib/whatsapp';
 import { printThermalLabel } from '@/lib/thermalLabel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 
 const BenefitBadge = ({ label, achieved }: { label: string; achieved: boolean }) => (
