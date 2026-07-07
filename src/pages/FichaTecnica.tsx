@@ -20,8 +20,9 @@ import RepuestosSelector from '@/components/RepuestosSelector';
 import ServiciosTable, { DEFAULT_SERVICIOS } from '@/components/ServiciosTable';
 import { CalendarIcon, FileText, Save, User, Wrench, FileDown, Printer, Award, Tag, BookOpen } from 'lucide-react';
 import WhatsAppButton from '@/components/WhatsAppButton';
-import { mensajeContactoRapido } from '@/lib/whatsapp';
+import { mensajeContactoRapido, mensajeEquipoListo, buildWhatsAppUrl } from '@/lib/whatsapp';
 import { printThermalLabel } from '@/lib/thermalLabel';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
 const BenefitBadge = ({ label, achieved }: { label: string; achieved: boolean }) => (
@@ -45,6 +46,11 @@ const FichaTecnicaPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(!!id);
   const [exportType, setExportType] = useState<'pdf' | 'print'>('pdf');
+  const [waDialogOpen, setWaDialogOpen] = useState(false);
+  const [waSent, setWaSent] = useState(false);
+  const [pendingType, setPendingType] = useState<'pdf' | 'print' | null>(null);
+
+
 
   // Form state
   const [numeroBoleta, setNumeroBoleta] = useState('');
@@ -170,8 +176,24 @@ const FichaTecnicaPage = () => {
       return;
     }
 
+    // Si la ficha está LISTA, obligamos a enviar el aviso por WhatsApp antes de imprimir/PDF
+    if (estado === 'LISTO' && !waSent) {
+      if (!clienteTelefono.trim()) {
+        toast({
+          title: 'Teléfono requerido',
+          description: 'Debe registrar el teléfono del cliente para enviar el aviso de WhatsApp antes de imprimir.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      setPendingType(type);
+      setWaDialogOpen(true);
+      return;
+    }
+
     setIsLoading(true);
     setExportType(type);
+
 
     try {
       // Save cliente
@@ -242,6 +264,9 @@ const FichaTecnicaPage = () => {
         setFechaEntrega(null);
         setEstado('TALLER');
       }
+      // Reset flag WhatsApp para futuras impresiones
+      setWaSent(false);
+
       
       // Refresh data
       await loadData();
@@ -711,7 +736,57 @@ const FichaTecnicaPage = () => {
           </div>
         </div>
       </main>
+
+      <Dialog open={waDialogOpen} onOpenChange={(o) => { if (!o) { setWaDialogOpen(false); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Aviso obligatorio por WhatsApp</DialogTitle>
+            <DialogDescription>
+              La ficha está marcada como <strong>Listo para Retirar</strong>. Debe enviar el aviso al cliente por WhatsApp antes de imprimir o generar el PDF.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
+            <p><strong>Cliente:</strong> {clienteNombre}</p>
+            <p><strong>Teléfono:</strong> {clienteTelefono || '—'}</p>
+            <p><strong>Modelo:</strong> {modeloMaquina}</p>
+            <p><strong>N° Servicio:</strong> {numeroBoleta}</p>
+          </div>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => { setWaDialogOpen(false); setPendingType(null); }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => {
+                const url = buildWhatsAppUrl(
+                  clienteTelefono,
+                  mensajeEquipoListo(clienteNombre.toUpperCase(), modeloMaquina, numeroBoleta.trim(), repuestos)
+                );
+                window.open(url, '_blank', 'noopener,noreferrer');
+                setWaSent(true);
+              }}
+            >
+              Abrir WhatsApp
+            </Button>
+            <Button
+              disabled={!waSent}
+              onClick={() => {
+                setWaDialogOpen(false);
+                const t = pendingType;
+                setPendingType(null);
+                if (t) handleSubmit(t);
+              }}
+            >
+              Ya envié · Continuar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 };
 
