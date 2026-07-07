@@ -741,7 +741,14 @@ const FichaTecnicaPage = () => {
         </div>
       </main>
 
-      <Dialog open={waDialogOpen} onOpenChange={(o) => { if (!o) { setWaDialogOpen(false); } }}>
+      <Dialog
+        open={waDialogOpen}
+        onOpenChange={(o) => {
+          if (!o) {
+            setWaDialogOpen(false);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Aviso obligatorio por WhatsApp</DialogTitle>
@@ -749,19 +756,17 @@ const FichaTecnicaPage = () => {
               Debe enviar el aviso al cliente por WhatsApp antes de imprimir o generar el PDF de la ficha.
             </DialogDescription>
           </DialogHeader>
+
           <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
             <p><strong>Cliente:</strong> {clienteNombre}</p>
             <p><strong>Teléfono:</strong> {clienteTelefono || '—'}</p>
             <p><strong>Modelo:</strong> {modeloMaquina}</p>
             <p><strong>N° Servicio:</strong> {numeroBoleta}</p>
           </div>
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button
-              variant="outline"
-              onClick={() => { setWaDialogOpen(false); setPendingType(null); }}
-            >
-              Cancelar
-            </Button>
+
+          {/* Paso 1: abrir WhatsApp */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Paso 1 — Abrir WhatsApp</p>
             <a
               href={
                 clienteTelefono
@@ -773,11 +778,62 @@ const FichaTecnicaPage = () => {
               }
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => setWaSent(true)}
-              className="inline-flex items-center justify-center rounded-md bg-green-600 hover:bg-green-700 text-white h-10 px-4 py-2 text-sm font-medium"
+              onClick={() => setWaOpened(true)}
+              className="inline-flex w-full items-center justify-center rounded-md bg-green-600 hover:bg-green-700 text-white h-10 px-4 py-2 text-sm font-medium"
             >
-              Abrir WhatsApp
+              {waOpened ? 'Volver a abrir WhatsApp' : 'Abrir WhatsApp'}
             </a>
+            <div
+              className={cn(
+                'flex items-center gap-2 text-sm rounded-md border px-3 py-2',
+                waOpened
+                  ? 'bg-green-50 border-green-300 text-green-700'
+                  : 'bg-amber-50 border-amber-300 text-amber-800'
+              )}
+            >
+              {waOpened ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4" />
+                  WhatsApp fue abierto en una nueva pestaña.
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="h-4 w-4" />
+                  Aún no se ha abierto WhatsApp.
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Paso 2: confirmación explícita */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Paso 2 — Confirmar envío</p>
+            <label
+              className={cn(
+                'flex items-start gap-2 rounded-md border px-3 py-2 text-sm cursor-pointer select-none',
+                !waOpened && 'opacity-50 cursor-not-allowed',
+                waConfirmed && 'bg-green-50 border-green-300'
+              )}
+            >
+              <Checkbox
+                checked={waConfirmed}
+                disabled={!waOpened}
+                onCheckedChange={(v) => setWaConfirmed(v === true)}
+                className="mt-0.5"
+              />
+              <span>
+                Confirmo que envié el mensaje de aviso al cliente por WhatsApp.
+              </span>
+            </label>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => { setWaDialogOpen(false); setPendingType(null); }}
+            >
+              Cancelar
+            </Button>
             <Button
               disabled={!waSent}
               onClick={() => {
@@ -787,7 +843,7 @@ const FichaTecnicaPage = () => {
                 if (t) handleSubmit(t);
               }}
             >
-              Ya envié · Continuar
+              {waSent ? 'Continuar e imprimir/PDF' : 'Complete los 2 pasos'}
             </Button>
           </DialogFooter>
         </DialogContent>
