@@ -264,6 +264,9 @@ const FichaTecnicaPage = () => {
         setFechaEntrega(null);
         setEstado('TALLER');
       }
+      // Reset flag WhatsApp para futuras impresiones
+      setWaSent(false);
+
       
       // Refresh data
       await loadData();
