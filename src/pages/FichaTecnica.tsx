@@ -176,12 +176,12 @@ const FichaTecnicaPage = () => {
       return;
     }
 
-    // Si la ficha está LISTA, obligamos a enviar el aviso por WhatsApp antes de imprimir/PDF
-    if (estado === 'LISTO' && !waSent) {
+    // Obligatorio: enviar aviso por WhatsApp antes de imprimir o descargar el PDF
+    if (!waSent) {
       if (!clienteTelefono.trim()) {
         toast({
           title: 'Teléfono requerido',
-          description: 'Debe registrar el teléfono del cliente para enviar el aviso de WhatsApp antes de imprimir.',
+          description: 'Debe registrar el teléfono del cliente para enviar el aviso de WhatsApp antes de imprimir o descargar la ficha.',
           variant: 'destructive',
         });
         return;
@@ -742,7 +742,7 @@ const FichaTecnicaPage = () => {
           <DialogHeader>
             <DialogTitle>Aviso obligatorio por WhatsApp</DialogTitle>
             <DialogDescription>
-              La ficha está marcada como <strong>Listo para Retirar</strong>. Debe enviar el aviso al cliente por WhatsApp antes de imprimir o generar el PDF.
+              Debe enviar el aviso al cliente por WhatsApp antes de imprimir o generar el PDF de la ficha.
             </DialogDescription>
           </DialogHeader>
           <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
