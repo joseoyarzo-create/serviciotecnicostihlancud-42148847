@@ -736,7 +736,57 @@ const FichaTecnicaPage = () => {
           </div>
         </div>
       </main>
+
+      <Dialog open={waDialogOpen} onOpenChange={(o) => { if (!o) { setWaDialogOpen(false); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Aviso obligatorio por WhatsApp</DialogTitle>
+            <DialogDescription>
+              La ficha está marcada como <strong>Listo para Retirar</strong>. Debe enviar el aviso al cliente por WhatsApp antes de imprimir o generar el PDF.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
+            <p><strong>Cliente:</strong> {clienteNombre}</p>
+            <p><strong>Teléfono:</strong> {clienteTelefono || '—'}</p>
+            <p><strong>Modelo:</strong> {modeloMaquina}</p>
+            <p><strong>N° Servicio:</strong> {numeroBoleta}</p>
+          </div>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => { setWaDialogOpen(false); setPendingType(null); }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => {
+                const url = buildWhatsAppUrl(
+                  clienteTelefono,
+                  mensajeEquipoListo(clienteNombre.toUpperCase(), modeloMaquina, numeroBoleta.trim(), repuestos)
+                );
+                window.open(url, '_blank', 'noopener,noreferrer');
+                setWaSent(true);
+              }}
+            >
+              Abrir WhatsApp
+            </Button>
+            <Button
+              disabled={!waSent}
+              onClick={() => {
+                setWaDialogOpen(false);
+                const t = pendingType;
+                setPendingType(null);
+                if (t) handleSubmit(t);
+              }}
+            >
+              Ya envié · Continuar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 };
 
