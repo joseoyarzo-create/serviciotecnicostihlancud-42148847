@@ -758,19 +758,22 @@ const FichaTecnicaPage = () => {
             >
               Cancelar
             </Button>
-            <Button
-              className="bg-green-600 hover:bg-green-700 text-white"
-              onClick={() => {
-                const url = buildWhatsAppUrl(
-                  clienteTelefono,
-                  mensajeEquipoListo(clienteNombre.toUpperCase(), modeloMaquina, numeroBoleta.trim(), repuestos)
-                );
-                window.open(url, '_blank', 'noopener,noreferrer');
-                setWaSent(true);
-              }}
+            <a
+              href={
+                clienteTelefono
+                  ? buildWhatsAppUrl(
+                      clienteTelefono,
+                      mensajeEquipoListo(clienteNombre.toUpperCase(), modeloMaquina, numeroBoleta.trim(), repuestos)
+                    )
+                  : '#'
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setWaSent(true)}
+              className="inline-flex items-center justify-center rounded-md bg-green-600 hover:bg-green-700 text-white h-10 px-4 py-2 text-sm font-medium"
             >
               Abrir WhatsApp
-            </Button>
+            </a>
             <Button
               disabled={!waSent}
               onClick={() => {
