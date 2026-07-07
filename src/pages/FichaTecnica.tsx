@@ -742,7 +742,7 @@ const FichaTecnicaPage = () => {
           <DialogHeader>
             <DialogTitle>Aviso obligatorio por WhatsApp</DialogTitle>
             <DialogDescription>
-              La ficha está marcada como <strong>Listo para Retirar</strong>. Debe enviar el aviso al cliente por WhatsApp antes de imprimir o generar el PDF.
+              Debe enviar el aviso al cliente por WhatsApp antes de imprimir o generar el PDF de la ficha.
             </DialogDescription>
           </DialogHeader>
           <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
