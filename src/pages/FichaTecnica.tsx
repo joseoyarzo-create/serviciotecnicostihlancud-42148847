@@ -181,14 +181,6 @@ const FichaTecnicaPage = () => {
 
     // Obligatorio: enviar aviso por WhatsApp antes de imprimir o descargar el PDF
     if (!waSent) {
-      if (!clienteTelefono.trim()) {
-        toast({
-          title: 'Teléfono requerido',
-          description: 'Debe registrar el teléfono del cliente para enviar el aviso de WhatsApp antes de imprimir o descargar la ficha.',
-          variant: 'destructive',
-        });
-        return;
-      }
       setPendingType(type);
       setWaDialogOpen(true);
       return;
