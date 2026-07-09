@@ -1,21 +1,37 @@
 import { RepuestoFicha } from '@/types';
 import { getTemplate, recordMessage, TemplateKey } from './waTemplates';
 
-export function buildWhatsAppUrl(phone: string, message: string): string {
+export function normalizeWhatsAppPhone(phone: string): string {
   const digits = phone.replace(/\D/g, '');
-  let normalized = digits;
-  if (digits.startsWith('569') && digits.length === 11) {
-    normalized = digits;
-  } else if (digits.startsWith('56') && digits.length >= 10) {
-    normalized = digits;
-  } else if (digits.startsWith('9') && digits.length === 9) {
-    normalized = '56' + digits;
-  } else if (digits.length === 8) {
-    normalized = '569' + digits;
-  } else {
-    normalized = digits.startsWith('56') ? digits : '56' + digits;
+  if (digits.startsWith('569') && digits.length === 11) return digits;
+  if (digits.startsWith('56') && digits.length >= 10) return digits;
+  if (digits.startsWith('9') && digits.length === 9) return '56' + digits;
+  if (digits.length === 8) return '569' + digits;
+  return digits.startsWith('56') ? digits : '56' + digits;
+}
+
+export function buildWhatsAppUrl(phone: string, message: string): string {
+  const normalized = normalizeWhatsAppPhone(phone);
+  const text = encodeURIComponent(message);
+  // Detectar móvil vs escritorio: wa.me suele redirigir a api.whatsapp.com
+  // (que en algunas redes está bloqueado). En escritorio usamos web.whatsapp.com.
+  const isMobile =
+    typeof navigator !== 'undefined' &&
+    /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  if (isMobile) {
+    return `whatsapp://send?phone=${normalized}&text=${text}`;
   }
-  return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
+  return `https://web.whatsapp.com/send?phone=${normalized}&text=${text}&type=phone_number&app_absent=0`;
+}
+
+export function buildWhatsAppFallbackUrls(phone: string, message: string): string[] {
+  const normalized = normalizeWhatsAppPhone(phone);
+  const text = encodeURIComponent(message);
+  return [
+    `https://web.whatsapp.com/send?phone=${normalized}&text=${text}`,
+    `https://wa.me/${normalized}?text=${text}`,
+    `whatsapp://send?phone=${normalized}&text=${text}`,
+  ];
 }
 
 export function calcularTotal(repuestos: RepuestoFicha[]): number {
