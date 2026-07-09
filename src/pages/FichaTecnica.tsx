@@ -768,22 +768,25 @@ const FichaTecnicaPage = () => {
           {/* Paso 1: abrir WhatsApp */}
           <div className="space-y-2">
             <p className="text-sm font-medium">Paso 1 — Abrir WhatsApp</p>
-            <a
-              href={
-                clienteTelefono
-                  ? buildWhatsAppUrl(
-                      clienteTelefono,
-                      mensajeEquipoListo(clienteNombre.toUpperCase(), modeloMaquina, numeroBoleta.trim(), repuestos)
-                    )
-                  : '#'
-              }
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setWaOpened(true)}
-              className="inline-flex w-full items-center justify-center rounded-md bg-green-600 hover:bg-green-700 text-white h-10 px-4 py-2 text-sm font-medium"
+            <Button
+              type="button"
+              disabled={!clienteTelefono.trim()}
+              onClick={() => {
+                if (!clienteTelefono.trim()) return;
+                window.open(
+                  buildWhatsAppUrl(
+                    clienteTelefono,
+                    mensajeEquipoListo(clienteNombre.toUpperCase(), modeloMaquina, numeroBoleta.trim(), repuestos)
+                  ),
+                  '_blank',
+                  'noopener,noreferrer'
+                );
+                setWaOpened(true);
+              }}
+              className="w-full bg-green-600 hover:bg-green-700 text-white"
             >
               {waOpened ? 'Volver a abrir WhatsApp' : 'Abrir WhatsApp'}
-            </a>
+            </Button>
             <div
               className={cn(
                 'flex items-center gap-2 text-sm rounded-md border px-3 py-2',
