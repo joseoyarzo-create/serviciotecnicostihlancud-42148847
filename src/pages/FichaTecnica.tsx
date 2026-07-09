@@ -181,14 +181,6 @@ const FichaTecnicaPage = () => {
 
     // Obligatorio: enviar aviso por WhatsApp antes de imprimir o descargar el PDF
     if (!waSent) {
-      if (!clienteTelefono.trim()) {
-        toast({
-          title: 'Teléfono requerido',
-          description: 'Debe registrar el teléfono del cliente para enviar el aviso de WhatsApp antes de imprimir o descargar la ficha.',
-          variant: 'destructive',
-        });
-        return;
-      }
       setPendingType(type);
       setWaDialogOpen(true);
       return;
@@ -756,6 +748,15 @@ const FichaTecnicaPage = () => {
               Debe enviar el aviso al cliente por WhatsApp antes de imprimir o generar el PDF de la ficha.
             </DialogDescription>
           </DialogHeader>
+
+          {!clienteTelefono.trim() && (
+            <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 text-destructive px-3 py-2 text-sm">
+              <AlertCircle className="h-4 w-4 mt-0.5" />
+              <span>
+                Falta el <strong>teléfono del cliente</strong>. Ciérralo, completa el teléfono y vuelve a intentar.
+              </span>
+            </div>
+          )}
 
           <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
             <p><strong>Cliente:</strong> {clienteNombre}</p>
