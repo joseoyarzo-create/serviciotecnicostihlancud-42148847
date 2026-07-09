@@ -181,6 +181,14 @@ const FichaTecnicaPage = () => {
 
     // Obligatorio: enviar aviso por WhatsApp antes de imprimir o descargar el PDF
     if (!waSent) {
+      if (!clienteTelefono.trim()) {
+        toast({
+          title: 'Teléfono requerido',
+          description: 'Debe registrar el teléfono del cliente para enviar el aviso de WhatsApp antes de imprimir o descargar la ficha.',
+          variant: 'destructive',
+        });
+        return;
+      }
       setPendingType(type);
       setWaDialogOpen(true);
       return;
@@ -749,15 +757,6 @@ const FichaTecnicaPage = () => {
             </DialogDescription>
           </DialogHeader>
 
-          {!clienteTelefono.trim() && (
-            <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 text-destructive px-3 py-2 text-sm">
-              <AlertCircle className="h-4 w-4 mt-0.5" />
-              <span>
-                Falta el <strong>teléfono del cliente</strong>. Ciérralo, completa el teléfono y vuelve a intentar.
-              </span>
-            </div>
-          )}
-
           <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
             <p><strong>Cliente:</strong> {clienteNombre}</p>
             <p><strong>Teléfono:</strong> {clienteTelefono || '—'}</p>
@@ -768,25 +767,22 @@ const FichaTecnicaPage = () => {
           {/* Paso 1: abrir WhatsApp */}
           <div className="space-y-2">
             <p className="text-sm font-medium">Paso 1 — Abrir WhatsApp</p>
-            <Button
-              type="button"
-              disabled={!clienteTelefono.trim()}
-              onClick={() => {
-                if (!clienteTelefono.trim()) return;
-                window.open(
-                  buildWhatsAppUrl(
-                    clienteTelefono,
-                    mensajeEquipoListo(clienteNombre.toUpperCase(), modeloMaquina, numeroBoleta.trim(), repuestos)
-                  ),
-                  '_blank',
-                  'noopener,noreferrer'
-                );
-                setWaOpened(true);
-              }}
-              className="w-full bg-green-600 hover:bg-green-700 text-white"
+            <a
+              href={
+                clienteTelefono
+                  ? buildWhatsAppUrl(
+                      clienteTelefono,
+                      mensajeEquipoListo(clienteNombre.toUpperCase(), modeloMaquina, numeroBoleta.trim(), repuestos)
+                    )
+                  : '#'
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setWaOpened(true)}
+              className="inline-flex w-full items-center justify-center rounded-md bg-green-600 hover:bg-green-700 text-white h-10 px-4 py-2 text-sm font-medium"
             >
               {waOpened ? 'Volver a abrir WhatsApp' : 'Abrir WhatsApp'}
-            </Button>
+            </a>
             <div
               className={cn(
                 'flex items-center gap-2 text-sm rounded-md border px-3 py-2',
