@@ -745,27 +745,16 @@ const FichaTecnicaPage = () => {
             </p>
           </section>
 
-          {/* Submit Buttons */}
+          {/* Botón principal + Etiqueta térmica */}
           <div className="flex flex-col sm:flex-row gap-3 animate-fade-in">
             <Button
-              onClick={() => handleSubmit('pdf')}
-              disabled={isLoading}
+              onClick={handleSaveOrden}
+              disabled={isSaving || !!savedFicha}
               size="lg"
               className="flex-1 hover-lift"
             >
-              <FileDown className="mr-2 h-5 w-5" />
-              {isLoading && exportType === 'pdf' ? 'Generando...' : 'Guardar y PDF'}
-            </Button>
-            
-            <Button
-              onClick={() => handleSubmit('print')}
-              disabled={isLoading}
-              size="lg"
-              variant="outline"
-              className="flex-1 hover-lift"
-            >
-              <Printer className="mr-2 h-5 w-5" />
-              {isLoading && exportType === 'print' ? 'Imprimiendo...' : 'Guardar e Imprimir'}
+              <Save className="mr-2 h-5 w-5" />
+              {isSaving ? 'Guardando...' : savedFicha ? '✔ Orden guardada' : 'Guardar Orden'}
             </Button>
 
             <Button
@@ -802,117 +791,140 @@ const FichaTecnicaPage = () => {
               Etiqueta Térmica
             </Button>
           </div>
+
+          {/* Asistente 3 pasos: Guardar → Notificar → PDF */}
+          {savedFicha && (
+            <section className="form-section animate-fade-in border-2 border-primary/30">
+              <h2 className="form-section-title flex items-center gap-2">
+                <MessageCircle className="h-5 w-5" />
+                Asistente para imprimir la Orden
+              </h2>
+
+              <ol className="space-y-4">
+                {/* PASO 1 */}
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="h-6 w-6 text-green-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold">PASO 1 — Orden guardada</p>
+                    <p className="text-sm text-muted-foreground">
+                      N° {savedFicha.numeroServicio} · {savedFicha.cliente.nombre}
+                    </p>
+                  </div>
+                </li>
+
+                {/* PASO 2 */}
+                <li className="flex items-start gap-3">
+                  {savedFicha.whatsappNotificado ? (
+                    <CheckCircle2 className="h-6 w-6 text-green-600 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="h-6 w-6 text-amber-500 shrink-0 mt-0.5" />
+                  )}
+                  <div className="flex-1">
+                    <p className="font-semibold">
+                      PASO 2 — {savedFicha.whatsappNotificado ? 'Cliente notificado' : 'Notificar al cliente'}
+                    </p>
+                    {savedFicha.whatsappNotificado ? (
+                      <p className="text-sm text-green-700">
+                        ✔ Notificado el{' '}
+                        {savedFicha.whatsappNotificadoAt
+                          ? format(savedFicha.whatsappNotificadoAt, "dd/MM/yyyy HH:mm", { locale: es })
+                          : ''}
+                      </p>
+                    ) : (
+                      <>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Antes de imprimir la Orden de Trabajo, debe notificar al cliente mediante WhatsApp.
+                        </p>
+                        <a
+                          href={waUrl || '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => setWaOpened(true)}
+                          className="inline-flex items-center justify-center rounded-md bg-green-600 hover:bg-green-700 text-white h-11 px-6 text-base font-semibold"
+                        >
+                          <MessageCircle className="mr-2 h-5 w-5" />
+                          {waOpened ? 'Volver a abrir WhatsApp' : 'Abrir WhatsApp'}
+                        </a>
+                        {waOpened && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Cuando vuelvas a la app te preguntaremos si el mensaje fue enviado.
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </li>
+
+                {/* PASO 3 */}
+                <li className="flex items-start gap-3">
+                  {savedFicha.whatsappNotificado ? (
+                    <FileDown className="h-6 w-6 text-primary shrink-0 mt-0.5" />
+                  ) : (
+                    <div className="h-6 w-6 rounded-full border-2 border-muted-foreground/40 shrink-0 mt-0.5" />
+                  )}
+                  <div className="flex-1">
+                    <p className="font-semibold">PASO 3 — Generar PDF</p>
+                    {!savedFicha.whatsappNotificado && (
+                      <p className="text-sm text-muted-foreground mb-2">
+                        (Bloqueado hasta confirmar el envío del WhatsApp)
+                      </p>
+                    )}
+                    <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                      <Button
+                        onClick={handleGeneratePdf}
+                        disabled={!savedFicha.whatsappNotificado || isLoading}
+                        size="lg"
+                      >
+                        <FileDown className="mr-2 h-5 w-5" />
+                        {isLoading && exportType === 'pdf' ? 'Generando...' : 'Generar PDF'}
+                      </Button>
+                      <Button
+                        onClick={handlePrintFicha}
+                        disabled={!savedFicha.whatsappNotificado || isLoading}
+                        size="lg"
+                        variant="outline"
+                      >
+                        <Printer className="mr-2 h-5 w-5" />
+                        Imprimir
+                      </Button>
+                      <Button
+                        onClick={handleNuevaOrden}
+                        size="lg"
+                        variant="ghost"
+                        className="sm:ml-auto"
+                      >
+                        {id ? 'Cerrar asistente' : 'Nueva Orden'}
+                      </Button>
+                    </div>
+                  </div>
+                </li>
+              </ol>
+            </section>
+          )}
         </div>
       </main>
 
-      <Dialog
-        open={waDialogOpen}
-        onOpenChange={(o) => {
-          if (!o) {
-            setWaDialogOpen(false);
-          }
-        }}
-      >
+      {/* Diálogo de confirmación al volver del foco */}
+      <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Aviso obligatorio por WhatsApp</DialogTitle>
+            <DialogTitle>¿El mensaje fue enviado correctamente?</DialogTitle>
             <DialogDescription>
-              Debe enviar el aviso al cliente por WhatsApp antes de imprimir o generar el PDF de la ficha.
+              Confirma si enviaste el aviso al cliente por WhatsApp para habilitar la generación del PDF.
             </DialogDescription>
           </DialogHeader>
-
-          <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
-            <p><strong>Cliente:</strong> {clienteNombre}</p>
-            <p><strong>Teléfono:</strong> {clienteTelefono || '—'}</p>
-            <p><strong>Modelo:</strong> {modeloMaquina}</p>
-            <p><strong>N° Servicio:</strong> {numeroBoleta}</p>
-          </div>
-
-          {/* Paso 1: abrir WhatsApp */}
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Paso 1 — Abrir WhatsApp</p>
-            <a
-              href={
-                clienteTelefono
-                  ? buildWhatsAppUrl(
-                      clienteTelefono,
-                      mensajeEquipoListo(clienteNombre.toUpperCase(), modeloMaquina, numeroBoleta.trim(), repuestos)
-                    )
-                  : '#'
-              }
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setWaOpened(true)}
-              className="inline-flex w-full items-center justify-center rounded-md bg-green-600 hover:bg-green-700 text-white h-10 px-4 py-2 text-sm font-medium"
-            >
-              {waOpened ? 'Volver a abrir WhatsApp' : 'Abrir WhatsApp'}
-            </a>
-            <div
-              className={cn(
-                'flex items-center gap-2 text-sm rounded-md border px-3 py-2',
-                waOpened
-                  ? 'bg-green-50 border-green-300 text-green-700'
-                  : 'bg-amber-50 border-amber-300 text-amber-800'
-              )}
-            >
-              {waOpened ? (
-                <>
-                  <CheckCircle2 className="h-4 w-4" />
-                  WhatsApp fue abierto en una nueva pestaña.
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="h-4 w-4" />
-                  Aún no se ha abierto WhatsApp.
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Paso 2: confirmación explícita */}
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Paso 2 — Confirmar envío</p>
-            <label
-              className={cn(
-                'flex items-start gap-2 rounded-md border px-3 py-2 text-sm cursor-pointer select-none',
-                !waOpened && 'opacity-50 cursor-not-allowed',
-                waConfirmed && 'bg-green-50 border-green-300'
-              )}
-            >
-              <Checkbox
-                checked={waConfirmed}
-                disabled={!waOpened}
-                onCheckedChange={(v) => setWaConfirmed(v === true)}
-                className="mt-0.5"
-              />
-              <span>
-                Confirmo que envié el mensaje de aviso al cliente por WhatsApp.
-              </span>
-            </label>
-          </div>
-
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button
-              variant="outline"
-              onClick={() => { setWaDialogOpen(false); setPendingType(null); }}
-            >
-              Cancelar
+            <Button variant="outline" onClick={() => { setConfirmDialogOpen(false); reopenWhatsapp(); }}>
+              🔄 Volver a abrir WhatsApp
             </Button>
-            <Button
-              disabled={!waSent}
-              onClick={() => {
-                setWaDialogOpen(false);
-                const t = pendingType;
-                setPendingType(null);
-                if (t) handleSubmit(t);
-              }}
-            >
-              {waSent ? 'Continuar e imprimir/PDF' : 'Complete los 2 pasos'}
+            <Button onClick={handleConfirmWhatsappSent}>
+              ✅ Sí, continuar
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
+
 
   );
 };
