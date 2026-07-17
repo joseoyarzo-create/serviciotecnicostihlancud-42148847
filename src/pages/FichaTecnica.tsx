@@ -168,7 +168,8 @@ const FichaTecnicaPage = () => {
     setModeloMaquina(modelo);
   };
 
-  const handleSubmit = async (type: 'pdf' | 'print') => {
+  // PASO 1: guarda la orden y activa el asistente (Paso 2 → WhatsApp, Paso 3 → PDF).
+  const handleSaveOrden = async () => {
     if (!numeroBoleta.trim()) {
       toast({ title: 'Error', description: 'El número de boleta es requerido', variant: 'destructive' });
       return;
@@ -181,34 +182,21 @@ const FichaTecnicaPage = () => {
       toast({ title: 'Error', description: 'El modelo de máquina es requerido', variant: 'destructive' });
       return;
     }
-
-    // Obligatorio: enviar aviso por WhatsApp antes de imprimir o descargar el PDF
-    if (!waSent) {
-      if (!clienteTelefono.trim()) {
-        toast({
-          title: 'Teléfono requerido',
-          description: 'Debe registrar el teléfono del cliente para enviar el aviso de WhatsApp antes de imprimir o descargar la ficha.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      setPendingType(type);
-      setWaDialogOpen(true);
+    if (!clienteTelefono.trim()) {
+      toast({
+        title: 'Teléfono requerido',
+        description: 'Debe registrar el teléfono del cliente para notificarlo por WhatsApp antes de imprimir la Orden.',
+        variant: 'destructive',
+      });
       return;
     }
 
-    setIsLoading(true);
-    setExportType(type);
-
-
+    setIsSaving(true);
     try {
-      // Save cliente
-      let cliente: Cliente;
-      
-      // Intentamos normalizar el nombre para la búsqueda
       const normalizedNombre = clienteNombre.trim().toUpperCase();
       const existingCliente = clientes.find(c => c.nombre.toUpperCase() === normalizedNombre);
 
+      let cliente: Cliente;
       if (existingCliente) {
         cliente = { id: existingCliente.id, nombre: normalizedNombre, telefono: clienteTelefono };
       } else if (selectedClienteId) {
@@ -216,10 +204,8 @@ const FichaTecnicaPage = () => {
       } else {
         cliente = { id: generateId(), nombre: normalizedNombre, telefono: clienteTelefono };
       }
-      
       await saveCliente(cliente);
 
-      // Save modelo if new
       if (!modelos.includes(modeloMaquina)) {
         await saveModelo({ id: generateId(), modelo: modeloMaquina });
       }
@@ -240,54 +226,129 @@ const FichaTecnicaPage = () => {
         tecnico,
         fechaEntrega,
         estado,
+        whatsappNotificado: false,
+        whatsappNotificadoAt: null,
       };
 
       await saveFicha(ficha);
 
-      // Generate document based on type
-      if (type === 'pdf') {
-        await generatePdfDocument(ficha);
-        toast({ title: 'Éxito', description: `Ficha ${id ? 'actualizada' : 'guardada'} y PDF generado` });
-      } else {
-        printFicha(ficha);
-        toast({ title: 'Éxito', description: `Ficha ${id ? 'actualizada' : 'guardada'} y enviada a impresión` });
-      }
-
-      // If we are editing, we don't necessarily want to reset the form, maybe just refresh data or stay there
-      if (!id) {
-        // Reset form only if creating new
-        setNumeroBoleta('');
-        setClienteNombre('');
-        setClienteTelefono('');
-        setSelectedClienteId(null);
-        setModeloMaquina('');
-        setNumeroSerie('');
-        setTipoAveria('');
-        setRepuestos([]);
-        setServicios(DEFAULT_SERVICIOS);
-        setFechaIngreso(new Date());
-        setFechaReparacion(new Date());
-        setFechaEntrega(null);
-        setEstado('TALLER');
-      }
-      // Reset flag WhatsApp para futuras impresiones
+      setSavedFicha(ficha);
       setWaOpened(false);
       setWaConfirmed(false);
-
-      
-      // Refresh data
-      await loadData();
-      if (id) {
-        // Optionally redirect back or stay
-        // navigate('/'); 
-      }
+      toast({ title: 'Orden guardada', description: 'Ahora notifica al cliente por WhatsApp para poder imprimir.' });
     } catch (error) {
       console.error('Error:', error);
-      toast({ title: 'Error', description: 'Error al generar el documento', variant: 'destructive' });
+      toast({ title: 'Error', description: 'No se pudo guardar la orden', variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Enlace único de WhatsApp reutilizado en Paso 2 y en "volver a abrir"
+  const waUrl = useMemo(() => {
+    const f = savedFicha;
+    if (!f || !f.cliente.telefono) return '';
+    return buildWhatsAppUrl(
+      f.cliente.telefono,
+      mensajeEquipoListo(f.cliente.nombre, f.modeloMaquina, f.numeroServicio, f.repuestos)
+    );
+  }, [savedFicha]);
+
+  const reopenWhatsapp = () => {
+    if (!waUrl) return;
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  // Cuando el navegador vuelve a tomar foco después de abrir WhatsApp, pedir confirmación.
+  const focusArmedRef = useRef(false);
+  useEffect(() => {
+    if (!waOpened || waConfirmed || !savedFicha) return;
+    focusArmedRef.current = false;
+    const t = setTimeout(() => { focusArmedRef.current = true; }, 800);
+    const onFocus = () => {
+      if (!focusArmedRef.current) return;
+      setConfirmDialogOpen(true);
+    };
+    window.addEventListener('focus', onFocus);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [waOpened, waConfirmed, savedFicha]);
+
+  const handleConfirmWhatsappSent = async () => {
+    if (!savedFicha) return;
+    try {
+      const at = await markFichaWhatsappNotificado(savedFicha.id);
+      setSavedFicha({ ...savedFicha, whatsappNotificado: true, whatsappNotificadoAt: at });
+      setWaConfirmed(true);
+      setConfirmDialogOpen(false);
+      toast({ title: 'Cliente notificado', description: 'Ahora puedes generar el PDF.' });
+    } catch {
+      toast({ title: 'Error', description: 'No se pudo registrar la notificación', variant: 'destructive' });
+    }
+  };
+
+  const requireNotified = () => {
+    if (!savedFicha?.whatsappNotificado) {
+      toast({
+        title: 'Notificación pendiente',
+        description: 'Primero debes notificar al cliente por WhatsApp (Paso 2).',
+        variant: 'destructive',
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const handleGeneratePdf = async () => {
+    if (!savedFicha || !requireNotified()) return;
+    setIsLoading(true);
+    setExportType('pdf');
+    try {
+      await generatePdfDocument(savedFicha);
+      toast({ title: 'Éxito', description: 'PDF generado' });
+    } catch (error) {
+      console.error(error);
+      toast({ title: 'Error', description: 'Error al generar PDF', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handlePrintFicha = () => {
+    if (!savedFicha || !requireNotified()) return;
+    setExportType('print');
+    try {
+      printFicha(savedFicha);
+    } catch (error) {
+      console.error(error);
+      toast({ title: 'Error', description: 'Error al imprimir', variant: 'destructive' });
+    }
+  };
+
+  const handleNuevaOrden = async () => {
+    setSavedFicha(null);
+    setWaOpened(false);
+    setWaConfirmed(false);
+    if (!id) {
+      setNumeroBoleta('');
+      setClienteNombre('');
+      setClienteTelefono('');
+      setSelectedClienteId(null);
+      setModeloMaquina('');
+      setNumeroSerie('');
+      setTipoAveria('');
+      setRepuestos([]);
+      setServicios(DEFAULT_SERVICIOS);
+      setFechaIngreso(new Date());
+      setFechaReparacion(new Date());
+      setFechaEntrega(null);
+      setEstado('TALLER');
+      await loadData();
+    }
+  };
+
 
   if (isFetching) {
     return (
