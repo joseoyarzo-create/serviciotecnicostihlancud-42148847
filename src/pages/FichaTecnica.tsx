@@ -54,6 +54,9 @@ const FichaTecnicaPage = () => {
   const [waOpened, setWaOpened] = useState(false);
   const [waConfirmed, setWaConfirmed] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [loadedNotified, setLoadedNotified] = useState(false);
+  const [loadedNotifiedAt, setLoadedNotifiedAt] = useState<Date | null>(null);
+
 
 
 
