@@ -514,7 +514,7 @@ export const saveFicha = async (ficha: FichaTecnica): Promise<void> => {
   if (existing) {
     const result = await supabase
       .from('fichas')
-      .update(fichaData)
+      .update(fichaData as never)
       .eq('id', ficha.id);
     error = result.error;
   } else {
