@@ -538,6 +538,20 @@ export const saveFicha = async (ficha: FichaTecnica): Promise<void> => {
   }
 };
 
+export const markFichaWhatsappNotificado = async (id: string): Promise<Date> => {
+  const now = new Date();
+  const { error } = await supabase
+    .from('fichas')
+    .update({ whatsapp_notificado: true, whatsapp_notificado_at: now.toISOString() } as never)
+    .eq('id', id);
+  if (error) {
+    console.error('Error marking ficha whatsapp notificado:', error);
+    throw error;
+  }
+  return now;
+};
+
+
 export const updateFichaEstado = async (id: string, estado: import('@/types').EstadoFicha): Promise<void> => {
   const updateData: { cliente_direccion: string; fecha_entrega: string | null } = {
     cliente_direccion: estado,
