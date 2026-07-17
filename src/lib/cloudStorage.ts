@@ -471,8 +471,10 @@ export const saveFicha = async (ficha: FichaTecnica): Promise<void> => {
     servicios: JSON.parse(JSON.stringify(ficha.servicios)) as Json,
     observaciones: ficha.tipoAveria,
     cliente_direccion: ficha.estado,
-    // firma_cliente: ficha.firmaCliente || null, -- Reverted as requested before
-  };
+    whatsapp_notificado: ficha.whatsappNotificado ?? false,
+    whatsapp_notificado_at: ficha.whatsappNotificadoAt ? ficha.whatsappNotificadoAt.toISOString() : null,
+  } as Record<string, unknown>;
+
 
   // Logic for points if system is active
   if (ficha.estado === 'ENTREGADA') {
