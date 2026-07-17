@@ -418,6 +418,9 @@ export const getFichas = async (): Promise<FichaTecnica[]> => {
     recomendaciones: 'REPARACIÓN GARANTIZADA POR 20 DÍAS DE LA FECHA DE RETIRO',
     tecnico: f.mecanico as 'JORGE' | 'JEAN',
     estado: (['TALLER','ESPERA_REPUESTO','LISTO','ENTREGADA'].includes(f.cliente_direccion ?? '') ? f.cliente_direccion! : 'TALLER') as import('@/types').EstadoFicha,
+    whatsappNotificado: !!(f as any).whatsapp_notificado,
+    whatsappNotificadoAt: (f as any).whatsapp_notificado_at ? new Date((f as any).whatsapp_notificado_at) : null,
+
   }));
 };
 
@@ -453,6 +456,9 @@ export const getFichaById = async (id: string): Promise<FichaTecnica | null> => 
     recomendaciones: 'REPARACIÓN GARANTIZADA POR 20 DÍAS DE LA FECHA DE RETIRO',
     tecnico: data.mecanico as 'JORGE' | 'JEAN',
     estado: (['TALLER','ESPERA_REPUESTO','LISTO','ENTREGADA'].includes(data.cliente_direccion ?? '') ? data.cliente_direccion! : 'TALLER') as import('@/types').EstadoFicha,
+    whatsappNotificado: !!(data as any).whatsapp_notificado,
+    whatsappNotificadoAt: (data as any).whatsapp_notificado_at ? new Date((data as any).whatsapp_notificado_at) : null,
+
   };
 };
 
@@ -471,8 +477,10 @@ export const saveFicha = async (ficha: FichaTecnica): Promise<void> => {
     servicios: JSON.parse(JSON.stringify(ficha.servicios)) as Json,
     observaciones: ficha.tipoAveria,
     cliente_direccion: ficha.estado,
-    // firma_cliente: ficha.firmaCliente || null, -- Reverted as requested before
-  };
+    whatsapp_notificado: ficha.whatsappNotificado ?? false,
+    whatsapp_notificado_at: ficha.whatsappNotificadoAt ? ficha.whatsappNotificadoAt.toISOString() : null,
+  } as Record<string, unknown>;
+
 
   // Logic for points if system is active
   if (ficha.estado === 'ENTREGADA') {
@@ -512,7 +520,7 @@ export const saveFicha = async (ficha: FichaTecnica): Promise<void> => {
   if (existing) {
     const result = await supabase
       .from('fichas')
-      .update(fichaData)
+      .update(fichaData as never)
       .eq('id', ficha.id);
     error = result.error;
   } else {
@@ -529,6 +537,20 @@ export const saveFicha = async (ficha: FichaTecnica): Promise<void> => {
     throw error;
   }
 };
+
+export const markFichaWhatsappNotificado = async (id: string): Promise<Date> => {
+  const now = new Date();
+  const { error } = await supabase
+    .from('fichas')
+    .update({ whatsapp_notificado: true, whatsapp_notificado_at: now.toISOString() } as never)
+    .eq('id', id);
+  if (error) {
+    console.error('Error marking ficha whatsapp notificado:', error);
+    throw error;
+  }
+  return now;
+};
+
 
 export const updateFichaEstado = async (id: string, estado: import('@/types').EstadoFicha): Promise<void> => {
   const updateData: { cliente_direccion: string; fecha_entrega: string | null } = {

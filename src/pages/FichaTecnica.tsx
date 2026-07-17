@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { FichaTecnica, Cliente, RepuestoFicha, Tecnico, EstadoFicha } from '@/types';
-import { getClientes, saveCliente, saveFicha, generateId, getModelos, saveModelo, getFichaById, getConfigSistema, ConfigSistema, getNextFolio, getDespieceUrl } from '@/lib/cloudStorage';
+import { getClientes, saveCliente, saveFicha, generateId, getModelos, saveModelo, getFichaById, getConfigSistema, ConfigSistema, getNextFolio, getDespieceUrl, markFichaWhatsappNotificado } from '@/lib/cloudStorage';
 
 import { generatePdfDocument, printFicha } from '@/lib/generatePdf';
 import { Input } from '@/components/ui/input';
@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import RepuestosSelector from '@/components/RepuestosSelector';
 import ServiciosTable, { DEFAULT_SERVICIOS } from '@/components/ServiciosTable';
-import { CalendarIcon, FileText, Save, User, Wrench, FileDown, Printer, Award, Tag, BookOpen, CheckCircle2, AlertCircle } from 'lucide-react';
+import { CalendarIcon, FileText, Save, User, Wrench, FileDown, Printer, Award, Tag, BookOpen, CheckCircle2, AlertCircle, MessageCircle } from 'lucide-react';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import { mensajeContactoRapido, mensajeEquipoListo, buildWhatsAppUrl } from '@/lib/whatsapp';
 import { printThermalLabel } from '@/lib/thermalLabel';
@@ -46,12 +46,18 @@ const FichaTecnicaPage = () => {
   const [modelosFull, setModelosFull] = useState<{ modelo: string; despieceUrl?: string | null }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(!!id);
+  const [isSaving, setIsSaving] = useState(false);
   const [exportType, setExportType] = useState<'pdf' | 'print'>('pdf');
-  const [waDialogOpen, setWaDialogOpen] = useState(false);
+
+  // Wizard state (Paso 1 guardar → Paso 2 WhatsApp → Paso 3 PDF)
+  const [savedFicha, setSavedFicha] = useState<FichaTecnica | null>(null);
   const [waOpened, setWaOpened] = useState(false);
   const [waConfirmed, setWaConfirmed] = useState(false);
-  const [pendingType, setPendingType] = useState<'pdf' | 'print' | null>(null);
-  const waSent = waOpened && waConfirmed;
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [loadedNotified, setLoadedNotified] = useState(false);
+  const [loadedNotifiedAt, setLoadedNotifiedAt] = useState<Date | null>(null);
+
+
 
 
 
@@ -102,6 +108,9 @@ const FichaTecnicaPage = () => {
         setServicios(ficha.servicios.length > 0 ? ficha.servicios : DEFAULT_SERVICIOS);
         setTecnico(ficha.tecnico);
         setEstado(ficha.estado || 'TALLER');
+        setLoadedNotified(!!ficha.whatsappNotificado);
+        setLoadedNotifiedAt(ficha.whatsappNotificadoAt ?? null);
+
       } else {
         toast({ title: 'Error', description: 'Ficha no encontrada', variant: 'destructive' });
         navigate('/');
@@ -165,7 +174,8 @@ const FichaTecnicaPage = () => {
     setModeloMaquina(modelo);
   };
 
-  const handleSubmit = async (type: 'pdf' | 'print') => {
+  // PASO 1: guarda la orden y activa el asistente (Paso 2 → WhatsApp, Paso 3 → PDF).
+  const handleSaveOrden = async () => {
     if (!numeroBoleta.trim()) {
       toast({ title: 'Error', description: 'El número de boleta es requerido', variant: 'destructive' });
       return;
@@ -178,34 +188,21 @@ const FichaTecnicaPage = () => {
       toast({ title: 'Error', description: 'El modelo de máquina es requerido', variant: 'destructive' });
       return;
     }
-
-    // Obligatorio: enviar aviso por WhatsApp antes de imprimir o descargar el PDF
-    if (!waSent) {
-      if (!clienteTelefono.trim()) {
-        toast({
-          title: 'Teléfono requerido',
-          description: 'Debe registrar el teléfono del cliente para enviar el aviso de WhatsApp antes de imprimir o descargar la ficha.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      setPendingType(type);
-      setWaDialogOpen(true);
+    if (!clienteTelefono.trim()) {
+      toast({
+        title: 'Teléfono requerido',
+        description: 'Debe registrar el teléfono del cliente para notificarlo por WhatsApp antes de imprimir la Orden.',
+        variant: 'destructive',
+      });
       return;
     }
 
-    setIsLoading(true);
-    setExportType(type);
-
-
+    setIsSaving(true);
     try {
-      // Save cliente
-      let cliente: Cliente;
-      
-      // Intentamos normalizar el nombre para la búsqueda
       const normalizedNombre = clienteNombre.trim().toUpperCase();
       const existingCliente = clientes.find(c => c.nombre.toUpperCase() === normalizedNombre);
 
+      let cliente: Cliente;
       if (existingCliente) {
         cliente = { id: existingCliente.id, nombre: normalizedNombre, telefono: clienteTelefono };
       } else if (selectedClienteId) {
@@ -213,10 +210,8 @@ const FichaTecnicaPage = () => {
       } else {
         cliente = { id: generateId(), nombre: normalizedNombre, telefono: clienteTelefono };
       }
-      
       await saveCliente(cliente);
 
-      // Save modelo if new
       if (!modelos.includes(modeloMaquina)) {
         await saveModelo({ id: generateId(), modelo: modeloMaquina });
       }
@@ -237,54 +232,130 @@ const FichaTecnicaPage = () => {
         tecnico,
         fechaEntrega,
         estado,
+        whatsappNotificado: id ? loadedNotified : false,
+        whatsappNotificadoAt: id ? loadedNotifiedAt : null,
+
       };
 
       await saveFicha(ficha);
 
-      // Generate document based on type
-      if (type === 'pdf') {
-        await generatePdfDocument(ficha);
-        toast({ title: 'Éxito', description: `Ficha ${id ? 'actualizada' : 'guardada'} y PDF generado` });
-      } else {
-        printFicha(ficha);
-        toast({ title: 'Éxito', description: `Ficha ${id ? 'actualizada' : 'guardada'} y enviada a impresión` });
-      }
-
-      // If we are editing, we don't necessarily want to reset the form, maybe just refresh data or stay there
-      if (!id) {
-        // Reset form only if creating new
-        setNumeroBoleta('');
-        setClienteNombre('');
-        setClienteTelefono('');
-        setSelectedClienteId(null);
-        setModeloMaquina('');
-        setNumeroSerie('');
-        setTipoAveria('');
-        setRepuestos([]);
-        setServicios(DEFAULT_SERVICIOS);
-        setFechaIngreso(new Date());
-        setFechaReparacion(new Date());
-        setFechaEntrega(null);
-        setEstado('TALLER');
-      }
-      // Reset flag WhatsApp para futuras impresiones
+      setSavedFicha(ficha);
       setWaOpened(false);
       setWaConfirmed(false);
-
-      
-      // Refresh data
-      await loadData();
-      if (id) {
-        // Optionally redirect back or stay
-        // navigate('/'); 
-      }
+      toast({ title: 'Orden guardada', description: 'Ahora notifica al cliente por WhatsApp para poder imprimir.' });
     } catch (error) {
       console.error('Error:', error);
-      toast({ title: 'Error', description: 'Error al generar el documento', variant: 'destructive' });
+      toast({ title: 'Error', description: 'No se pudo guardar la orden', variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Enlace único de WhatsApp reutilizado en Paso 2 y en "volver a abrir"
+  const waUrl = useMemo(() => {
+    const f = savedFicha;
+    if (!f || !f.cliente.telefono) return '';
+    return buildWhatsAppUrl(
+      f.cliente.telefono,
+      mensajeEquipoListo(f.cliente.nombre, f.modeloMaquina, f.numeroServicio, f.repuestos)
+    );
+  }, [savedFicha]);
+
+  const reopenWhatsapp = () => {
+    if (!waUrl) return;
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  // Cuando el navegador vuelve a tomar foco después de abrir WhatsApp, pedir confirmación.
+  const focusArmedRef = useRef(false);
+  useEffect(() => {
+    if (!waOpened || waConfirmed || !savedFicha) return;
+    focusArmedRef.current = false;
+    const t = setTimeout(() => { focusArmedRef.current = true; }, 800);
+    const onFocus = () => {
+      if (!focusArmedRef.current) return;
+      setConfirmDialogOpen(true);
+    };
+    window.addEventListener('focus', onFocus);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [waOpened, waConfirmed, savedFicha]);
+
+  const handleConfirmWhatsappSent = async () => {
+    if (!savedFicha) return;
+    try {
+      const at = await markFichaWhatsappNotificado(savedFicha.id);
+      setSavedFicha({ ...savedFicha, whatsappNotificado: true, whatsappNotificadoAt: at });
+      setWaConfirmed(true);
+      setConfirmDialogOpen(false);
+      toast({ title: 'Cliente notificado', description: 'Ahora puedes generar el PDF.' });
+    } catch {
+      toast({ title: 'Error', description: 'No se pudo registrar la notificación', variant: 'destructive' });
+    }
+  };
+
+  const requireNotified = () => {
+    if (!savedFicha?.whatsappNotificado) {
+      toast({
+        title: 'Notificación pendiente',
+        description: 'Primero debes notificar al cliente por WhatsApp (Paso 2).',
+        variant: 'destructive',
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const handleGeneratePdf = async () => {
+    if (!savedFicha || !requireNotified()) return;
+    setIsLoading(true);
+    setExportType('pdf');
+    try {
+      await generatePdfDocument(savedFicha);
+      toast({ title: 'Éxito', description: 'PDF generado' });
+    } catch (error) {
+      console.error(error);
+      toast({ title: 'Error', description: 'Error al generar PDF', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handlePrintFicha = () => {
+    if (!savedFicha || !requireNotified()) return;
+    setExportType('print');
+    try {
+      printFicha(savedFicha);
+    } catch (error) {
+      console.error(error);
+      toast({ title: 'Error', description: 'Error al imprimir', variant: 'destructive' });
+    }
+  };
+
+  const handleNuevaOrden = async () => {
+    setSavedFicha(null);
+    setWaOpened(false);
+    setWaConfirmed(false);
+    if (!id) {
+      setNumeroBoleta('');
+      setClienteNombre('');
+      setClienteTelefono('');
+      setSelectedClienteId(null);
+      setModeloMaquina('');
+      setNumeroSerie('');
+      setTipoAveria('');
+      setRepuestos([]);
+      setServicios(DEFAULT_SERVICIOS);
+      setFechaIngreso(new Date());
+      setFechaReparacion(new Date());
+      setFechaEntrega(null);
+      setEstado('TALLER');
+      await loadData();
+    }
+  };
+
 
   if (isFetching) {
     return (
@@ -681,27 +752,16 @@ const FichaTecnicaPage = () => {
             </p>
           </section>
 
-          {/* Submit Buttons */}
+          {/* Botón principal + Etiqueta térmica */}
           <div className="flex flex-col sm:flex-row gap-3 animate-fade-in">
             <Button
-              onClick={() => handleSubmit('pdf')}
-              disabled={isLoading}
+              onClick={handleSaveOrden}
+              disabled={isSaving || !!savedFicha}
               size="lg"
               className="flex-1 hover-lift"
             >
-              <FileDown className="mr-2 h-5 w-5" />
-              {isLoading && exportType === 'pdf' ? 'Generando...' : 'Guardar y PDF'}
-            </Button>
-            
-            <Button
-              onClick={() => handleSubmit('print')}
-              disabled={isLoading}
-              size="lg"
-              variant="outline"
-              className="flex-1 hover-lift"
-            >
-              <Printer className="mr-2 h-5 w-5" />
-              {isLoading && exportType === 'print' ? 'Imprimiendo...' : 'Guardar e Imprimir'}
+              <Save className="mr-2 h-5 w-5" />
+              {isSaving ? 'Guardando...' : savedFicha ? '✔ Orden guardada' : 'Guardar Orden'}
             </Button>
 
             <Button
@@ -738,117 +798,140 @@ const FichaTecnicaPage = () => {
               Etiqueta Térmica
             </Button>
           </div>
+
+          {/* Asistente 3 pasos: Guardar → Notificar → PDF */}
+          {savedFicha && (
+            <section className="form-section animate-fade-in border-2 border-primary/30">
+              <h2 className="form-section-title flex items-center gap-2">
+                <MessageCircle className="h-5 w-5" />
+                Asistente para imprimir la Orden
+              </h2>
+
+              <ol className="space-y-4">
+                {/* PASO 1 */}
+                <li className="flex items-start gap-3">
+                  <CheckCircle2 className="h-6 w-6 text-green-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold">PASO 1 — Orden guardada</p>
+                    <p className="text-sm text-muted-foreground">
+                      N° {savedFicha.numeroServicio} · {savedFicha.cliente.nombre}
+                    </p>
+                  </div>
+                </li>
+
+                {/* PASO 2 */}
+                <li className="flex items-start gap-3">
+                  {savedFicha.whatsappNotificado ? (
+                    <CheckCircle2 className="h-6 w-6 text-green-600 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="h-6 w-6 text-amber-500 shrink-0 mt-0.5" />
+                  )}
+                  <div className="flex-1">
+                    <p className="font-semibold">
+                      PASO 2 — {savedFicha.whatsappNotificado ? 'Cliente notificado' : 'Notificar al cliente'}
+                    </p>
+                    {savedFicha.whatsappNotificado ? (
+                      <p className="text-sm text-green-700">
+                        ✔ Notificado el{' '}
+                        {savedFicha.whatsappNotificadoAt
+                          ? format(savedFicha.whatsappNotificadoAt, "dd/MM/yyyy HH:mm", { locale: es })
+                          : ''}
+                      </p>
+                    ) : (
+                      <>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Antes de imprimir la Orden de Trabajo, debe notificar al cliente mediante WhatsApp.
+                        </p>
+                        <a
+                          href={waUrl || '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => setWaOpened(true)}
+                          className="inline-flex items-center justify-center rounded-md bg-green-600 hover:bg-green-700 text-white h-11 px-6 text-base font-semibold"
+                        >
+                          <MessageCircle className="mr-2 h-5 w-5" />
+                          {waOpened ? 'Volver a abrir WhatsApp' : 'Abrir WhatsApp'}
+                        </a>
+                        {waOpened && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Cuando vuelvas a la app te preguntaremos si el mensaje fue enviado.
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </li>
+
+                {/* PASO 3 */}
+                <li className="flex items-start gap-3">
+                  {savedFicha.whatsappNotificado ? (
+                    <FileDown className="h-6 w-6 text-primary shrink-0 mt-0.5" />
+                  ) : (
+                    <div className="h-6 w-6 rounded-full border-2 border-muted-foreground/40 shrink-0 mt-0.5" />
+                  )}
+                  <div className="flex-1">
+                    <p className="font-semibold">PASO 3 — Generar PDF</p>
+                    {!savedFicha.whatsappNotificado && (
+                      <p className="text-sm text-muted-foreground mb-2">
+                        (Bloqueado hasta confirmar el envío del WhatsApp)
+                      </p>
+                    )}
+                    <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                      <Button
+                        onClick={handleGeneratePdf}
+                        disabled={!savedFicha.whatsappNotificado || isLoading}
+                        size="lg"
+                      >
+                        <FileDown className="mr-2 h-5 w-5" />
+                        {isLoading && exportType === 'pdf' ? 'Generando...' : 'Generar PDF'}
+                      </Button>
+                      <Button
+                        onClick={handlePrintFicha}
+                        disabled={!savedFicha.whatsappNotificado || isLoading}
+                        size="lg"
+                        variant="outline"
+                      >
+                        <Printer className="mr-2 h-5 w-5" />
+                        Imprimir
+                      </Button>
+                      <Button
+                        onClick={handleNuevaOrden}
+                        size="lg"
+                        variant="ghost"
+                        className="sm:ml-auto"
+                      >
+                        {id ? 'Cerrar asistente' : 'Nueva Orden'}
+                      </Button>
+                    </div>
+                  </div>
+                </li>
+              </ol>
+            </section>
+          )}
         </div>
       </main>
 
-      <Dialog
-        open={waDialogOpen}
-        onOpenChange={(o) => {
-          if (!o) {
-            setWaDialogOpen(false);
-          }
-        }}
-      >
+      {/* Diálogo de confirmación al volver del foco */}
+      <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Aviso obligatorio por WhatsApp</DialogTitle>
+            <DialogTitle>¿El mensaje fue enviado correctamente?</DialogTitle>
             <DialogDescription>
-              Debe enviar el aviso al cliente por WhatsApp antes de imprimir o generar el PDF de la ficha.
+              Confirma si enviaste el aviso al cliente por WhatsApp para habilitar la generación del PDF.
             </DialogDescription>
           </DialogHeader>
-
-          <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
-            <p><strong>Cliente:</strong> {clienteNombre}</p>
-            <p><strong>Teléfono:</strong> {clienteTelefono || '—'}</p>
-            <p><strong>Modelo:</strong> {modeloMaquina}</p>
-            <p><strong>N° Servicio:</strong> {numeroBoleta}</p>
-          </div>
-
-          {/* Paso 1: abrir WhatsApp */}
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Paso 1 — Abrir WhatsApp</p>
-            <a
-              href={
-                clienteTelefono
-                  ? buildWhatsAppUrl(
-                      clienteTelefono,
-                      mensajeEquipoListo(clienteNombre.toUpperCase(), modeloMaquina, numeroBoleta.trim(), repuestos)
-                    )
-                  : '#'
-              }
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setWaOpened(true)}
-              className="inline-flex w-full items-center justify-center rounded-md bg-green-600 hover:bg-green-700 text-white h-10 px-4 py-2 text-sm font-medium"
-            >
-              {waOpened ? 'Volver a abrir WhatsApp' : 'Abrir WhatsApp'}
-            </a>
-            <div
-              className={cn(
-                'flex items-center gap-2 text-sm rounded-md border px-3 py-2',
-                waOpened
-                  ? 'bg-green-50 border-green-300 text-green-700'
-                  : 'bg-amber-50 border-amber-300 text-amber-800'
-              )}
-            >
-              {waOpened ? (
-                <>
-                  <CheckCircle2 className="h-4 w-4" />
-                  WhatsApp fue abierto en una nueva pestaña.
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="h-4 w-4" />
-                  Aún no se ha abierto WhatsApp.
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Paso 2: confirmación explícita */}
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Paso 2 — Confirmar envío</p>
-            <label
-              className={cn(
-                'flex items-start gap-2 rounded-md border px-3 py-2 text-sm cursor-pointer select-none',
-                !waOpened && 'opacity-50 cursor-not-allowed',
-                waConfirmed && 'bg-green-50 border-green-300'
-              )}
-            >
-              <Checkbox
-                checked={waConfirmed}
-                disabled={!waOpened}
-                onCheckedChange={(v) => setWaConfirmed(v === true)}
-                className="mt-0.5"
-              />
-              <span>
-                Confirmo que envié el mensaje de aviso al cliente por WhatsApp.
-              </span>
-            </label>
-          </div>
-
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button
-              variant="outline"
-              onClick={() => { setWaDialogOpen(false); setPendingType(null); }}
-            >
-              Cancelar
+            <Button variant="outline" onClick={() => { setConfirmDialogOpen(false); reopenWhatsapp(); }}>
+              🔄 Volver a abrir WhatsApp
             </Button>
-            <Button
-              disabled={!waSent}
-              onClick={() => {
-                setWaDialogOpen(false);
-                const t = pendingType;
-                setPendingType(null);
-                if (t) handleSubmit(t);
-              }}
-            >
-              {waSent ? 'Continuar e imprimir/PDF' : 'Complete los 2 pasos'}
+            <Button onClick={handleConfirmWhatsappSent}>
+              ✅ Sí, continuar
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
+
 
   );
 };
