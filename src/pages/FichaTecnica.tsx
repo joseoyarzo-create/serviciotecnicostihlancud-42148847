@@ -105,6 +105,9 @@ const FichaTecnicaPage = () => {
         setServicios(ficha.servicios.length > 0 ? ficha.servicios : DEFAULT_SERVICIOS);
         setTecnico(ficha.tecnico);
         setEstado(ficha.estado || 'TALLER');
+        setLoadedNotified(!!ficha.whatsappNotificado);
+        setLoadedNotifiedAt(ficha.whatsappNotificadoAt ?? null);
+
       } else {
         toast({ title: 'Error', description: 'Ficha no encontrada', variant: 'destructive' });
         navigate('/');
