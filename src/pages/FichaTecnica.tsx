@@ -232,8 +232,9 @@ const FichaTecnicaPage = () => {
         tecnico,
         fechaEntrega,
         estado,
-        whatsappNotificado: false,
-        whatsappNotificadoAt: null,
+        whatsappNotificado: id ? loadedNotified : false,
+        whatsappNotificadoAt: id ? loadedNotifiedAt : null,
+
       };
 
       await saveFicha(ficha);
