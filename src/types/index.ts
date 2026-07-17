@@ -61,9 +61,6 @@ export interface FichaTecnica {
   tecnico: 'JORGE' | 'JEAN';
   fechaEntrega: Date | null;
   estado: EstadoFicha;
-  whatsappNotificado?: boolean;
-  whatsappNotificadoAt?: Date | null;
 }
-
 
 export type Tecnico = 'JORGE' | 'JEAN';

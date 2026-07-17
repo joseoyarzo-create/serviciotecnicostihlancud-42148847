@@ -92,8 +92,6 @@ export type Database = {
           repuestos: Json | null
           servicios: Json | null
           updated_at: string
-          whatsapp_notificado: boolean
-          whatsapp_notificado_at: string | null
         }
         Insert: {
           cliente_direccion?: string | null
@@ -112,8 +110,6 @@ export type Database = {
           repuestos?: Json | null
           servicios?: Json | null
           updated_at?: string
-          whatsapp_notificado?: boolean
-          whatsapp_notificado_at?: string | null
         }
         Update: {
           cliente_direccion?: string | null
@@ -132,8 +128,6 @@ export type Database = {
           repuestos?: Json | null
           servicios?: Json | null
           updated_at?: string
-          whatsapp_notificado?: boolean
-          whatsapp_notificado_at?: string | null
         }
         Relationships: []
       }
