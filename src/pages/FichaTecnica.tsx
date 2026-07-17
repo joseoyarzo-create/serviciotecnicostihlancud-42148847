@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { FichaTecnica, Cliente, RepuestoFicha, Tecnico, EstadoFicha } from '@/types';
-import { getClientes, saveCliente, saveFicha, generateId, getModelos, saveModelo, getFichaById, getConfigSistema, ConfigSistema, getNextFolio, getDespieceUrl } from '@/lib/cloudStorage';
+import { getClientes, saveCliente, saveFicha, generateId, getModelos, saveModelo, getFichaById, getConfigSistema, ConfigSistema, getNextFolio, getDespieceUrl, markFichaWhatsappNotificado } from '@/lib/cloudStorage';
 
 import { generatePdfDocument, printFicha } from '@/lib/generatePdf';
 import { Input } from '@/components/ui/input';
@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import RepuestosSelector from '@/components/RepuestosSelector';
 import ServiciosTable, { DEFAULT_SERVICIOS } from '@/components/ServiciosTable';
-import { CalendarIcon, FileText, Save, User, Wrench, FileDown, Printer, Award, Tag, BookOpen, CheckCircle2, AlertCircle } from 'lucide-react';
+import { CalendarIcon, FileText, Save, User, Wrench, FileDown, Printer, Award, Tag, BookOpen, CheckCircle2, AlertCircle, MessageCircle } from 'lucide-react';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import { mensajeContactoRapido, mensajeEquipoListo, buildWhatsAppUrl } from '@/lib/whatsapp';
 import { printThermalLabel } from '@/lib/thermalLabel';
@@ -46,12 +46,15 @@ const FichaTecnicaPage = () => {
   const [modelosFull, setModelosFull] = useState<{ modelo: string; despieceUrl?: string | null }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(!!id);
+  const [isSaving, setIsSaving] = useState(false);
   const [exportType, setExportType] = useState<'pdf' | 'print'>('pdf');
-  const [waDialogOpen, setWaDialogOpen] = useState(false);
+
+  // Wizard state (Paso 1 guardar → Paso 2 WhatsApp → Paso 3 PDF)
+  const [savedFicha, setSavedFicha] = useState<FichaTecnica | null>(null);
   const [waOpened, setWaOpened] = useState(false);
   const [waConfirmed, setWaConfirmed] = useState(false);
-  const [pendingType, setPendingType] = useState<'pdf' | 'print' | null>(null);
-  const waSent = waOpened && waConfirmed;
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+
 
 
 
