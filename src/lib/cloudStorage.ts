@@ -418,6 +418,9 @@ export const getFichas = async (): Promise<FichaTecnica[]> => {
     recomendaciones: 'REPARACIÓN GARANTIZADA POR 20 DÍAS DE LA FECHA DE RETIRO',
     tecnico: f.mecanico as 'JORGE' | 'JEAN',
     estado: (['TALLER','ESPERA_REPUESTO','LISTO','ENTREGADA'].includes(f.cliente_direccion ?? '') ? f.cliente_direccion! : 'TALLER') as import('@/types').EstadoFicha,
+    whatsappNotificado: !!(f as any).whatsapp_notificado,
+    whatsappNotificadoAt: (f as any).whatsapp_notificado_at ? new Date((f as any).whatsapp_notificado_at) : null,
+
   }));
 };
 
