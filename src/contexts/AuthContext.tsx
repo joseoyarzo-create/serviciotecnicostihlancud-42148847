@@ -28,14 +28,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    // Safety: never stay stuck on the loading spinner
+    const timeout = setTimeout(() => setLoading(false), 8000);
 
-    return () => subscription.unsubscribe();
+    // Get initial session
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+      })
+      .catch(async () => {
+        // Corrupted/expired stored session: clear it so the user can log in again
+        try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* ignore */ }
+        setSession(null);
+        setUser(null);
+      })
+      .finally(() => {
+        clearTimeout(timeout);
+        setLoading(false);
+      });
+
+    return () => {
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
