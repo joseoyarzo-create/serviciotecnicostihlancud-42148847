@@ -133,6 +133,33 @@ const Stats = () => {
 
   const isCurrentMonthShown = isSameMonth(currentMonth, today);
 
+  // Estadísticas por mecánico
+  const mecanicos = Array.from(
+    new Set(fichas.map((f) => (f.tecnico || '').trim().toUpperCase()).filter(Boolean))
+  ).sort();
+  const statsPorMecanico = mecanicos.map((mec) => {
+    const fichasMec = fichas.filter(
+      (f) => (f.tecnico || '').trim().toUpperCase() === mec
+    );
+    const fichasMesMec = monthlyFichas.filter(
+      (f) => (f.tecnico || '').trim().toUpperCase() === mec
+    );
+    return {
+      mecanico: mec,
+      totalHistorico: fichasMec.reduce((s, f) => s + calcTotal(f), 0),
+      fichasHistorico: fichasMec.length,
+      totalMes: fichasMesMec.reduce((s, f) => s + calcTotal(f), 0),
+      fichasMes: fichasMesMec.length,
+      entregadas: fichasMec.filter((f) => f.estado === 'ENTREGADA').length,
+      enTaller: fichasMec.filter((f) => f.estado !== 'ENTREGADA').length,
+    };
+  });
+  const mecanicoChartData = statsPorMecanico.map((s) => ({
+    mecanico: s.mecanico,
+    total: s.totalMes,
+    fichas: s.fichasMes,
+  }));
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
