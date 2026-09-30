@@ -20,6 +20,7 @@ import RepuestosSelector from '@/components/RepuestosSelector';
 import ServiciosTable, { DEFAULT_SERVICIOS } from '@/components/ServiciosTable';
 import { CalendarIcon, FileText, Save, User, Wrench, FileDown, Printer, Award, Tag, BookOpen } from 'lucide-react';
 import WhatsAppButton from '@/components/WhatsAppButton';
+import FichaQrButton from '@/components/FichaQrButton';
 import { mensajeContactoRapido } from '@/lib/whatsapp';
 import { printThermalLabel } from '@/lib/thermalLabel';
 import { cn } from '@/lib/utils';
@@ -62,6 +63,7 @@ const FichaTecnicaPage = () => {
   const [tecnico, setTecnico] = useState<Tecnico>('JORGE');
   const [estado, setEstado] = useState<EstadoFicha>('TALLER');
   const [config, setConfig] = useState<ConfigSistema | null>(null);
+  const [publicToken, setPublicToken] = useState<string | undefined>();
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -93,6 +95,7 @@ const FichaTecnicaPage = () => {
         setServicios(ficha.servicios.length > 0 ? ficha.servicios : DEFAULT_SERVICIOS);
         setTecnico(ficha.tecnico);
         setEstado(ficha.estado || 'TALLER');
+        setPublicToken(ficha.publicToken);
       } else {
         toast({ title: 'Error', description: 'Ficha no encontrada', variant: 'destructive' });
         navigate('/');
@@ -708,6 +711,15 @@ const FichaTecnicaPage = () => {
               <Tag className="mr-2 h-5 w-5" />
               Etiqueta Térmica
             </Button>
+            <FichaQrButton
+              token={publicToken}
+              numeroBoleta={numeroBoleta}
+              clienteNombre={clienteNombre}
+              clienteTelefono={clienteTelefono}
+              size="lg"
+              label
+              className="flex-1 hover-lift"
+            />
           </div>
         </div>
       </main>
