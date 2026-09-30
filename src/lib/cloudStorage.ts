@@ -418,6 +418,7 @@ export const getFichas = async (): Promise<FichaTecnica[]> => {
     recomendaciones: 'REPARACIÓN GARANTIZADA POR 20 DÍAS DE LA FECHA DE RETIRO',
     tecnico: f.mecanico as 'JORGE' | 'JEAN',
     estado: (['TALLER','ESPERA_REPUESTO','LISTO','ENTREGADA'].includes(f.cliente_direccion ?? '') ? f.cliente_direccion! : 'TALLER') as import('@/types').EstadoFicha,
+    publicToken: (f as { public_token?: string }).public_token,
   }));
 };
 
@@ -453,6 +454,7 @@ export const getFichaById = async (id: string): Promise<FichaTecnica | null> => 
     recomendaciones: 'REPARACIÓN GARANTIZADA POR 20 DÍAS DE LA FECHA DE RETIRO',
     tecnico: data.mecanico as 'JORGE' | 'JEAN',
     estado: (['TALLER','ESPERA_REPUESTO','LISTO','ENTREGADA'].includes(data.cliente_direccion ?? '') ? data.cliente_direccion! : 'TALLER') as import('@/types').EstadoFicha,
+    publicToken: (data as { public_token?: string }).public_token,
   };
 };
 

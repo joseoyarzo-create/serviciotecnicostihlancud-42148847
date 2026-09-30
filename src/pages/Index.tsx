@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
+import FichaQrButton from '@/components/FichaQrButton';
 import { FileText, Package, Users, Wrench, Plus, Download, Trash2, Clock, FileDown, Printer, Search, Edit, CheckCircle, RotateCcw, Zap, Bell, ChevronDown, ChevronUp } from 'lucide-react';
 import { buildWhatsAppUrl, mensajeEquipoListo, mensajeRecordatorioRetiro } from '@/lib/whatsapp';
 import stihlLogo from '@/assets/stihl-logo.jpg';
@@ -456,6 +457,12 @@ const Index = () => {
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
+                          <FichaQrButton
+                            token={ficha.publicToken}
+                            numeroBoleta={ficha.numeroBoleta}
+                            clienteNombre={ficha.cliente.nombre}
+                            clienteTelefono={ficha.cliente.telefono}
+                          />
                           <Button
                             size="sm"
                             variant="outline"
