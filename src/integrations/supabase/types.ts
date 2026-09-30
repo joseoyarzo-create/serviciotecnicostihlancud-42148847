@@ -89,6 +89,7 @@ export type Database = {
           numero_boleta: string
           numero_serie: string | null
           observaciones: string | null
+          public_token: string
           repuestos: Json | null
           servicios: Json | null
           updated_at: string
@@ -109,6 +110,7 @@ export type Database = {
           numero_boleta: string
           numero_serie?: string | null
           observaciones?: string | null
+          public_token?: string
           repuestos?: Json | null
           servicios?: Json | null
           updated_at?: string
@@ -129,6 +131,7 @@ export type Database = {
           numero_boleta?: string
           numero_serie?: string | null
           observaciones?: string | null
+          public_token?: string
           repuestos?: Json | null
           servicios?: Json | null
           updated_at?: string
@@ -184,7 +187,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_ficha_publica: {
+        Args: { _token: string }
+        Returns: {
+          cliente_nombre: string
+          fecha_entrega: string
+          fecha_ingreso: string
+          fecha_reparacion: string
+          mecanico: string
+          modelo_maquina: string
+          numero_boleta: string
+          numero_serie: string
+          observaciones: string
+          repuestos: Json
+          servicios: Json
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
