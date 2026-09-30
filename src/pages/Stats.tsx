@@ -306,6 +306,82 @@ const Stats = () => {
           </Card>
         </div>
 
+        {/* Estadísticas por Mecánico */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wrench className="h-5 w-5 text-primary" />
+              Rendimiento por Mecánico
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Ingresos de {format(currentMonth, 'MMMM yyyy', { locale: es })} y totales históricos
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {statsPorMecanico.length === 0 ? (
+              <p className="text-center text-muted-foreground py-6">
+                No hay fichas con mecánico asignado.
+              </p>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {statsPorMecanico.map((s) => (
+                    <Card key={s.mecanico} className="border-primary/30">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg flex items-center justify-between">
+                          {s.mecanico}
+                          <Badge variant="secondary">{s.fichasMes} fichas este mes</Badge>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <div className="flex justify-between items-baseline">
+                          <span className="text-sm text-muted-foreground">Ingresos del mes</span>
+                          <span className="text-xl font-bold text-green-700">
+                            {formatCLP(s.totalMes)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-baseline">
+                          <span className="text-sm text-muted-foreground">Total histórico</span>
+                          <span className="font-semibold">{formatCLP(s.totalHistorico)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs text-muted-foreground pt-1 border-t">
+                          <span>{s.fichasHistorico} fichas en total</span>
+                          <span>{s.entregadas} entregadas · {s.enTaller} en taller</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                <div className="h-[260px]">
+                  <p className="text-sm font-medium mb-2">
+                    Comparación de ingresos del mes por mecánico
+                  </p>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={mecanicoChartData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                      <XAxis dataKey="mecanico" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 11 }}
+                        tickFormatter={(v) => `$${v / 1000}k`}
+                      />
+                      <Tooltip
+                        formatter={(value: number, _name, props) => [
+                          formatCLP(value),
+                          `${props.payload.fichas} ficha${props.payload.fichas !== 1 ? 's' : ''}`,
+                        ]}
+                      />
+                      <Bar dataKey="total" fill="#F37021" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Charts */}
         <div ref={chartsRef} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Daily Chart — clickable */}
