@@ -15,6 +15,7 @@ import Admin from "./pages/Admin";
 import Login from "./pages/Login";
 import OAuthConsent from "./pages/OAuthConsent";
 import NotFound from "./pages/NotFound";
+import FichaPublica from "./pages/FichaPublica";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
+            <Route path="/f/:token" element={<FichaPublica />} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/ficha-tecnica" element={<ProtectedRoute><FichaTecnica /></ProtectedRoute>} />
             <Route path="/ficha-tecnica/:id" element={<ProtectedRoute><FichaTecnica /></ProtectedRoute>} />

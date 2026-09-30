@@ -61,6 +61,7 @@ export interface FichaTecnica {
   tecnico: 'JORGE' | 'JEAN';
   fechaEntrega: Date | null;
   estado: EstadoFicha;
+  publicToken?: string;
 }
 
 export type Tecnico = 'JORGE' | 'JEAN';
