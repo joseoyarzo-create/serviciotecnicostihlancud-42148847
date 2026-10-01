@@ -281,6 +281,34 @@ const FichaTecnicaPage = () => {
     );
   }
 
+  // Al crear una ficha nueva, obligar a elegir el mecánico antes de rellenar datos
+  if (!id && !tecnico) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto py-16 px-4 max-w-2xl">
+          <div className="text-center mb-10">
+            <Wrench className="h-12 w-12 text-primary mx-auto mb-4" />
+            <h1 className="text-3xl font-heading font-bold mb-2">Nueva Ficha Técnica</h1>
+            <p className="text-muted-foreground text-lg">Antes de comenzar, selecciona el mecánico encargado</p>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-6">
+            {(['JORGE', 'JEAN'] as Tecnico[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTecnico(t)}
+                className="form-section hover-lift cursor-pointer border-2 border-primary/20 hover:border-primary transition-colors py-10 text-center"
+              >
+                <p className="text-2xl font-bold">{t}</p>
+                <p className="text-muted-foreground mt-1">Mecánico encargado</p>
+              </button>
+            ))}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -598,6 +626,20 @@ const FichaTecnicaPage = () => {
                   rows={2}
                 />
               </div>
+
+              <div className="input-group">
+                <Label className="input-label">Comentarios *</Label>
+                <Textarea
+                  value={comentarios}
+                  onChange={(e) => setComentarios(e.target.value)}
+                  placeholder="Comentarios obligatorios: estado de la máquina, trabajos a realizar, aclaraciones..."
+                  rows={3}
+                  className={!comentarios.trim() ? 'border-orange-400' : ''}
+                />
+                {!comentarios.trim() && (
+                  <p className="text-xs text-orange-600 mt-1">Esta sección es obligatoria</p>
+                )}
+              </div>
             </div>
           </section>
 
@@ -625,7 +667,7 @@ const FichaTecnicaPage = () => {
             <div className="grid md:grid-cols-2 gap-4">
               <div className="input-group">
                 <Label className="input-label">Mecánico *</Label>
-                <Select value={tecnico} onValueChange={(value: Tecnico) => setTecnico(value)}>
+                <Select value={tecnico ?? ''} onValueChange={(value: Tecnico) => setTecnico(value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccione mecánico" />
                   </SelectTrigger>
@@ -712,7 +754,7 @@ const FichaTecnicaPage = () => {
                   repuestos,
                   servicios,
                   recomendaciones: '',
-                  tecnico,
+                  tecnico: tecnico as Tecnico,
                   estado,
                 });
               }}
