@@ -60,7 +60,8 @@ const FichaTecnicaPage = () => {
   const [tipoAveria, setTipoAveria] = useState('');
   const [repuestos, setRepuestos] = useState<RepuestoFicha[]>([]);
   const [servicios, setServicios] = useState(DEFAULT_SERVICIOS);
-  const [tecnico, setTecnico] = useState<Tecnico>('JORGE');
+  const [tecnico, setTecnico] = useState<Tecnico | null>(null);
+  const [comentarios, setComentarios] = useState('');
   const [estado, setEstado] = useState<EstadoFicha>('TALLER');
   const [config, setConfig] = useState<ConfigSistema | null>(null);
   const [publicToken, setPublicToken] = useState<string | undefined>();
@@ -172,6 +173,14 @@ const FichaTecnicaPage = () => {
       toast({ title: 'Error', description: 'El modelo de máquina es requerido', variant: 'destructive' });
       return;
     }
+    if (!tecnico) {
+      toast({ title: 'Error', description: 'Debe seleccionar el mecánico', variant: 'destructive' });
+      return;
+    }
+    if (!comentarios.trim()) {
+      toast({ title: 'Error', description: 'La sección Comentarios es obligatoria', variant: 'destructive' });
+      return;
+    }
 
     setIsLoading(true);
     setExportType(type);
@@ -208,11 +217,13 @@ const FichaTecnicaPage = () => {
         cliente,
         modeloMaquina,
         numeroSerie,
-        tipoAveria,
+        tipoAveria: comentarios.trim()
+          ? `${tipoAveria.trim() ? tipoAveria.trim() + '\n\n' : ''}Comentarios: ${comentarios.trim()}`
+          : tipoAveria,
         repuestos,
         servicios,
         recomendaciones: 'REPARACIÓN GARANTIZADA POR 20 DÍAS DE LA FECHA DE RETIRO',
-        tecnico,
+        tecnico: tecnico as Tecnico,
         fechaEntrega,
         estado,
       };
@@ -244,6 +255,8 @@ const FichaTecnicaPage = () => {
         setFechaReparacion(new Date());
         setFechaEntrega(null);
         setEstado('TALLER');
+        setComentarios('');
+        setTecnico(null);
       }
       
       // Refresh data
@@ -264,6 +277,34 @@ const FichaTecnicaPage = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Cargando ficha...</p>
+      </div>
+    );
+  }
+
+  // Al crear una ficha nueva, obligar a elegir el mecánico antes de rellenar datos
+  if (!id && !tecnico) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto py-16 px-4 max-w-2xl">
+          <div className="text-center mb-10">
+            <Wrench className="h-12 w-12 text-primary mx-auto mb-4" />
+            <h1 className="text-3xl font-heading font-bold mb-2">Nueva Ficha Técnica</h1>
+            <p className="text-muted-foreground text-lg">Antes de comenzar, selecciona el mecánico encargado</p>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-6">
+            {(['JORGE', 'JEAN'] as Tecnico[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTecnico(t)}
+                className="form-section hover-lift cursor-pointer border-2 border-primary/20 hover:border-primary transition-colors py-10 text-center"
+              >
+                <p className="text-2xl font-bold">{t}</p>
+                <p className="text-muted-foreground mt-1">Mecánico encargado</p>
+              </button>
+            ))}
+          </div>
+        </main>
       </div>
     );
   }
@@ -585,6 +626,20 @@ const FichaTecnicaPage = () => {
                   rows={2}
                 />
               </div>
+
+              <div className="input-group">
+                <Label className="input-label">Comentarios *</Label>
+                <Textarea
+                  value={comentarios}
+                  onChange={(e) => setComentarios(e.target.value)}
+                  placeholder="Comentarios obligatorios: estado de la máquina, trabajos a realizar, aclaraciones..."
+                  rows={3}
+                  className={!comentarios.trim() ? 'border-orange-400' : ''}
+                />
+                {!comentarios.trim() && (
+                  <p className="text-xs text-orange-600 mt-1">Esta sección es obligatoria</p>
+                )}
+              </div>
             </div>
           </section>
 
@@ -612,7 +667,7 @@ const FichaTecnicaPage = () => {
             <div className="grid md:grid-cols-2 gap-4">
               <div className="input-group">
                 <Label className="input-label">Mecánico *</Label>
-                <Select value={tecnico} onValueChange={(value: Tecnico) => setTecnico(value)}>
+                <Select value={tecnico ?? ''} onValueChange={(value: Tecnico) => setTecnico(value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccione mecánico" />
                   </SelectTrigger>
@@ -699,7 +754,7 @@ const FichaTecnicaPage = () => {
                   repuestos,
                   servicios,
                   recomendaciones: '',
-                  tecnico,
+                  tecnico: tecnico as Tecnico,
                   estado,
                 });
               }}
