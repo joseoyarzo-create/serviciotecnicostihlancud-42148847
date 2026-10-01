@@ -60,7 +60,8 @@ const FichaTecnicaPage = () => {
   const [tipoAveria, setTipoAveria] = useState('');
   const [repuestos, setRepuestos] = useState<RepuestoFicha[]>([]);
   const [servicios, setServicios] = useState(DEFAULT_SERVICIOS);
-  const [tecnico, setTecnico] = useState<Tecnico>('JORGE');
+  const [tecnico, setTecnico] = useState<Tecnico | null>(null);
+  const [comentarios, setComentarios] = useState('');
   const [estado, setEstado] = useState<EstadoFicha>('TALLER');
   const [config, setConfig] = useState<ConfigSistema | null>(null);
   const [publicToken, setPublicToken] = useState<string | undefined>();
@@ -172,6 +173,14 @@ const FichaTecnicaPage = () => {
       toast({ title: 'Error', description: 'El modelo de máquina es requerido', variant: 'destructive' });
       return;
     }
+    if (!tecnico) {
+      toast({ title: 'Error', description: 'Debe seleccionar el mecánico', variant: 'destructive' });
+      return;
+    }
+    if (!comentarios.trim()) {
+      toast({ title: 'Error', description: 'La sección Comentarios es obligatoria', variant: 'destructive' });
+      return;
+    }
 
     setIsLoading(true);
     setExportType(type);
@@ -208,11 +217,13 @@ const FichaTecnicaPage = () => {
         cliente,
         modeloMaquina,
         numeroSerie,
-        tipoAveria,
+        tipoAveria: comentarios.trim()
+          ? `${tipoAveria.trim() ? tipoAveria.trim() + '\n\n' : ''}Comentarios: ${comentarios.trim()}`
+          : tipoAveria,
         repuestos,
         servicios,
         recomendaciones: 'REPARACIÓN GARANTIZADA POR 20 DÍAS DE LA FECHA DE RETIRO',
-        tecnico,
+        tecnico: tecnico as Tecnico,
         fechaEntrega,
         estado,
       };
@@ -244,6 +255,8 @@ const FichaTecnicaPage = () => {
         setFechaReparacion(new Date());
         setFechaEntrega(null);
         setEstado('TALLER');
+        setComentarios('');
+        setTecnico(null);
       }
       
       // Refresh data
