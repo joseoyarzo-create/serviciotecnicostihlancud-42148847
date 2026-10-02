@@ -28,7 +28,7 @@ const generateFileName = (ficha: FichaTecnica): string => {
   return `${boleta}_${cliente}_(${modelo})_${mecanico}`;
 };
 
-export const generatePdfDocument = async (ficha: FichaTecnica): Promise<void> => {
+export const createPdfDoc = (ficha: FichaTecnica): jsPDF => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   
