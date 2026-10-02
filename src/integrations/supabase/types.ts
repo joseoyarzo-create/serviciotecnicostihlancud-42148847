@@ -191,6 +191,7 @@ export type Database = {
         Args: { _token: string }
         Returns: {
           cliente_nombre: string
+          cliente_telefono: string
           fecha_entrega: string
           fecha_ingreso: string
           fecha_reparacion: string

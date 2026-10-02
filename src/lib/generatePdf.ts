@@ -28,7 +28,7 @@ const generateFileName = (ficha: FichaTecnica): string => {
   return `${boleta}_${cliente}_(${modelo})_${mecanico}`;
 };
 
-export const generatePdfDocument = async (ficha: FichaTecnica): Promise<void> => {
+export const createPdfDoc = (ficha: FichaTecnica): jsPDF => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   
@@ -259,10 +259,16 @@ export const generatePdfDocument = async (ficha: FichaTecnica): Promise<void> =>
   doc.setFont('helvetica', 'bold');
   doc.text(`MECÁNICO ENCARGADO: ${ficha.tecnico === 'JORGE' ? 'JORGE ALVARADO' : 'JEAN'}`, 14, yPos);
 
-  // Save with custom filename
+  return doc;
+};
+
+export const generatePdfDocument = async (ficha: FichaTecnica): Promise<void> => {
+  const doc = createPdfDoc(ficha);
   const fileName = generateFileName(ficha);
   doc.save(`${fileName}.pdf`);
 };
+
+export const getPdfFileName = (ficha: FichaTecnica): string => generateFileName(ficha);
 
 // HTML escape function to prevent XSS
 const escapeHtml = (text: string | null | undefined): string => {
