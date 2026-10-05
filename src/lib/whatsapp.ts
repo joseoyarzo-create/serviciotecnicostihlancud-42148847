@@ -29,6 +29,11 @@ export function formatPrecio(monto: number): string {
   return `$${monto.toLocaleString('es-CL')}`;
 }
 
+function linkFicha(token?: string): string {
+  if (!token) return '';
+  return `\n\n📄 Vea su ficha técnica aquí:\n${window.location.origin}/f/${token}`;
+}
+
 function applyTemplate(
   key: TemplateKey,
   vars: Record<string, string>
@@ -45,7 +50,8 @@ export function mensajeEquipoListo(
   modeloMaquina: string,
   numeroServicio: string,
   repuestos: RepuestoFicha[],
-  fichaId = ''
+  fichaId = '',
+  publicToken?: string
 ): string {
   const total = calcularTotal(repuestos);
   const precioLinea = total > 0 ? `💰 *Valor total a cancelar: ${formatPrecio(total)}*\n\n` : '';
@@ -54,7 +60,7 @@ export function mensajeEquipoListo(
     '{modelo}': modeloMaquina,
     '{servicio}': numeroServicio,
     '{precio}': precioLinea,
-  });
+  }) + linkFicha(publicToken);
   recordMessage({
     tipo: 'equipoListo',
     clienteNombre,
@@ -73,7 +79,8 @@ export function mensajeRecordatorioRetiro(
   numeroServicio: string,
   diasEsperando: number,
   repuestos: RepuestoFicha[],
-  fichaId = ''
+  fichaId = '',
+  publicToken?: string
 ): string {
   const total = calcularTotal(repuestos);
   const precioLinea = total > 0 ? `💰 *Valor a cancelar: ${formatPrecio(total)}*\n\n` : '';
@@ -83,7 +90,7 @@ export function mensajeRecordatorioRetiro(
     '{servicio}': numeroServicio,
     '{dias}': String(diasEsperando),
     '{precio}': precioLinea,
-  });
+  }) + linkFicha(publicToken);
   recordMessage({
     tipo: 'recordatorio',
     clienteNombre,
