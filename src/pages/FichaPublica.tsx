@@ -81,7 +81,7 @@ const FichaPublica = () => {
         canvas.className = 'block w-full rounded border bg-white shadow-sm';
         const ctx = canvas.getContext('2d');
         if (!ctx) continue;
-        await pdfPage.render({ canvasContext: ctx, viewport, canvas }).promise;
+        await pdfPage.render({ canvasContext: ctx, viewport }).promise;
         container.appendChild(canvas);
       }
       if (!cancelled) setLoading(false);
