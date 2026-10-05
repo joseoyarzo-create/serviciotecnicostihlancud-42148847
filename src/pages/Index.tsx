@@ -104,7 +104,9 @@ const PendientesRetiro = ({ fichas }: { fichas: import('@/types').FichaTecnica[]
                               ficha.modeloMaquina,
                               ficha.numeroServicio,
                               dias,
-                              ficha.repuestos
+                              ficha.repuestos,
+                              ficha.id,
+                              ficha.publicToken
                             )
                           ),
                           '_blank',
@@ -480,7 +482,7 @@ const Index = () => {
                               window.open(
                                 buildWhatsAppUrl(
                                   ficha.cliente.telefono,
-                                  mensajeEquipoListo(ficha.cliente.nombre, ficha.modeloMaquina, ficha.numeroServicio, ficha.repuestos)
+                                  mensajeEquipoListo(ficha.cliente.nombre, ficha.modeloMaquina, ficha.numeroServicio, ficha.repuestos, ficha.id, ficha.publicToken)
                                 ),
                                 '_blank',
                                 'noopener,noreferrer'
