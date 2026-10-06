@@ -26,6 +26,28 @@ export interface ServicioItem {
   nombre: string;
   revision: boolean;
   reparacion: boolean;
+  necesitaCambio?: boolean;
+  motivoNoCambio?: string;
+  motivoOtro?: string;
+}
+
+export const MOTIVOS_NO_CAMBIO = [
+  'Cliente no autorizó',
+  'No había repuesto disponible',
+  'Repuesto encargado',
+  'Cliente retiró la máquina',
+  'Se recomienda para próximo servicio',
+  'Otro',
+] as const;
+
+export function motivoTexto(s: ServicioItem): string {
+  if (!s.motivoNoCambio) return 'Sin motivo indicado';
+  if (s.motivoNoCambio === 'Otro') return s.motivoOtro?.trim() || 'Otro';
+  return s.motivoNoCambio;
+}
+
+export function serviciosPendientes(servicios: ServicioItem[]): ServicioItem[] {
+  return (servicios || []).filter(s => s.necesitaCambio && !s.reparacion);
 }
 
 export type EstadoFicha = 'TALLER' | 'ESPERA_REPUESTO' | 'LISTO' | 'ENTREGADA';
