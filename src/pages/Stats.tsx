@@ -44,6 +44,7 @@ import { Link } from 'react-router-dom';
 import { exportStatsToPdf } from '@/lib/statsPdf';
 import { FileDown } from 'lucide-react';
 import { useRef } from 'react';
+import StatsFallas from '@/components/StatsFallas';
 
 const calcTotal = (ficha: FichaTecnica) =>
   ficha.repuestos.reduce(
@@ -666,6 +667,7 @@ const Stats = () => {
             )}
           </CardContent>
         </Card>
+        <StatsFallas fichas={fichas} />
       </main>
     </div>
   );
