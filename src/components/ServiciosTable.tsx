@@ -1,7 +1,11 @@
+import { Fragment } from 'react';
 import { ServicioItem } from '@/types';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { CheckSquare } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { MOTIVOS_NO_CAMBIO } from '@/types';
 
 interface Props {
   servicios: ServicioItem[];
@@ -38,6 +42,12 @@ const ServiciosTable = ({ servicios, onServiciosChange }: Props) => {
   const toggleReparacion = (index: number) => {
     const updated = [...servicios];
     updated[index] = { ...updated[index], reparacion: !updated[index].reparacion };
+    onServiciosChange(updated);
+  };
+
+  const update = (index: number, patch: Partial<ServicioItem>) => {
+    const updated = [...servicios];
+    updated[index] = { ...updated[index], ...patch };
     onServiciosChange(updated);
   };
 
@@ -80,13 +90,15 @@ const ServiciosTable = ({ servicios, onServiciosChange }: Props) => {
           <thead>
             <tr>
               <th className="w-2/5">SERVICIO</th>
-              <th className="w-1/4 text-center">REVISIÓN</th>
-              <th className="w-1/4 text-center">REPARACIÓN/CAMBIO</th>
+              <th className="text-center">REVISIÓN</th>
+              <th className="text-center">NECESITA CAMBIO</th>
+              <th className="text-center">REPARACIÓN/CAMBIO</th>
             </tr>
           </thead>
           <tbody>
             {servicios.map((servicio, index) => (
-              <tr key={index}>
+              <Fragment key={index}>
+              <tr>
                 <td className="font-medium">{servicio.nombre}</td>
                 <td className="text-center">
                   <div className="flex justify-center">
@@ -99,12 +111,47 @@ const ServiciosTable = ({ servicios, onServiciosChange }: Props) => {
                 <td className="text-center">
                   <div className="flex justify-center">
                     <Checkbox
+                      checked={!!servicio.necesitaCambio}
+                      onCheckedChange={(v) => update(index, { necesitaCambio: !!v })}
+                    />
+                  </div>
+                </td>
+                <td className="text-center">
+                  <div className="flex justify-center">
+                    <Checkbox
                       checked={servicio.reparacion}
                       onCheckedChange={() => toggleReparacion(index)}
                     />
                   </div>
                 </td>
               </tr>
+              {servicio.necesitaCambio && !servicio.reparacion && (
+                <tr className="bg-primary/5">
+                  <td colSpan={4}>
+                    <div className="flex flex-wrap items-center gap-2 py-1">
+                      <span className="text-sm font-medium">Motivo por el que no se realizó el cambio:</span>
+                      <Select
+                        value={servicio.motivoNoCambio || ''}
+                        onValueChange={(v) => update(index, { motivoNoCambio: v })}
+                      >
+                        <SelectTrigger className="w-64 h-8"><SelectValue placeholder="Seleccionar motivo" /></SelectTrigger>
+                        <SelectContent>
+                          {MOTIVOS_NO_CAMBIO.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      {servicio.motivoNoCambio === 'Otro' && (
+                        <Input
+                          className="h-8 w-64"
+                          placeholder="Escribe el motivo"
+                          value={servicio.motivoOtro || ''}
+                          onChange={(e) => update(index, { motivoOtro: e.target.value })}
+                        />
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              )}
+              </Fragment>
             ))}
           </tbody>
         </table>

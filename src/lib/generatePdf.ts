@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { serviciosPendientes, motivoTexto } from '@/types';
 import { FichaTecnica } from '@/types';
 import stihlLogo from '@/assets/stihl-logo.jpg';
 
@@ -238,8 +239,12 @@ export const createPdfDoc = (ficha: FichaTecnica): jsPDF => {
   autoTable(doc, {
     startY: yPos,
     body: [
-      [{ content: 'RECOMENDACIONES:', styles: { fontStyle: 'bold' } }],
-      [''],
+      [{ content: 'RECOMENDACIONES / TRABAJOS NO REALIZADOS:', styles: { fontStyle: 'bold' } }],
+      [serviciosPendientes(ficha.servicios).length
+        ? serviciosPendientes(ficha.servicios)
+            .map(s => `${s.nombre}: NECESITA CAMBIO - NO CAMBIADO. Motivo: ${motivoTexto(s)}`)
+            .join('\n')
+        : ''],
     ],
     theme: 'grid',
     styles: { fontSize: 8, cellPadding: 2, textColor: 0, lineColor: 0, lineWidth: 0.2 },
@@ -414,8 +419,8 @@ export const printFicha = (ficha: FichaTecnica): void => {
       </table>
 
       <table>
-        <tr><td class="section-title">RECOMENDACIONES:</td></tr>
-        <tr><td style="height: 15px;"></td></tr>
+        <tr><td class="section-title">RECOMENDACIONES / TRABAJOS NO REALIZADOS:</td></tr>
+        <tr><td style="height: 15px;">${serviciosPendientes(ficha.servicios).map(s => `${escapeHtml(s.nombre)}: NECESITA CAMBIO - NO CAMBIADO. Motivo: ${escapeHtml(motivoTexto(s))}`).join('<br/>')}</td></tr>
       </table>
 
       <div class="footer">
