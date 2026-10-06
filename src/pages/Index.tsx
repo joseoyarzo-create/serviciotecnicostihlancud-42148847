@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import FichaQrButton from '@/components/FichaQrButton';
-import { FileText, Package, Users, Wrench, Plus, Download, Trash2, Clock, FileDown, Printer, Search, Edit, CheckCircle, RotateCcw, Zap, Bell, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileText, Package, Users, Wrench, Plus, Download, Trash2, Clock, FileDown, Printer, Search, Edit, CheckCircle, RotateCcw, Bell, ChevronDown, ChevronUp } from 'lucide-react';
 import { buildWhatsAppUrl, mensajeEquipoListo, mensajeRecordatorioRetiro } from '@/lib/whatsapp';
 import stihlLogo from '@/assets/stihl-logo.jpg';
 import { format, differenceInDays } from 'date-fns';
@@ -322,21 +322,7 @@ const Index = () => {
         <PendientesRetiro fichas={allFichas} />
 
         {/* Quick Actions */}
-        <section className="grid md:grid-cols-3 gap-6 mb-12">
-          <Link to="/ficha-rapida">
-            <div className="form-section hover-lift cursor-pointer border-2 border-primary/20 hover:border-primary transition-colors animate-fade-in" style={{ animationDelay: '0.35s' }}>
-              <div className="flex items-center gap-4">
-                <div className="bg-primary rounded-full p-4">
-                  <Zap className="h-8 w-8 text-primary-foreground" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold">Ficha Rápida</h3>
-                  <p className="text-muted-foreground">Crear ficha en segundos</p>
-                </div>
-              </div>
-            </div>
-          </Link>
-
+        <section className="grid md:grid-cols-2 gap-6 mb-12">
           <Link to="/ficha-tecnica">
             <div className="form-section hover-lift cursor-pointer border-2 border-primary/20 hover:border-primary transition-colors animate-fade-in" style={{ animationDelay: '0.4s' }}>
               <div className="flex items-center gap-4">
