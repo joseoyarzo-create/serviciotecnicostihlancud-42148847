@@ -7,7 +7,6 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import FichaTecnica from "./pages/FichaTecnica";
-import FichaRapida from "./pages/FichaRapida";
 import Repuestos from "./pages/Repuestos";
 import Clientes from "./pages/Clientes";
 import Stats from "./pages/Stats";
@@ -33,7 +32,6 @@ const App = () => (
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/ficha-tecnica" element={<ProtectedRoute><FichaTecnica /></ProtectedRoute>} />
             <Route path="/ficha-tecnica/:id" element={<ProtectedRoute><FichaTecnica /></ProtectedRoute>} />
-            <Route path="/ficha-rapida" element={<ProtectedRoute><FichaRapida /></ProtectedRoute>} />
             <Route path="/repuestos" element={<ProtectedRoute><Repuestos /></ProtectedRoute>} />
             <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
             <Route path="/stats" element={<ProtectedRoute><Stats /></ProtectedRoute>} />
