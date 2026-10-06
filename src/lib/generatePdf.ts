@@ -419,8 +419,8 @@ export const printFicha = (ficha: FichaTecnica): void => {
       </table>
 
       <table>
-        <tr><td class="section-title">RECOMENDACIONES:</td></tr>
-        <tr><td style="height: 15px;"></td></tr>
+        <tr><td class="section-title">RECOMENDACIONES / TRABAJOS NO REALIZADOS:</td></tr>
+        <tr><td style="height: 15px;">${serviciosPendientes(ficha.servicios).map(s => `${escapeHtml(s.nombre)}: NECESITA CAMBIO - NO CAMBIADO. Motivo: ${escapeHtml(motivoTexto(s))}`).join('<br/>')}</td></tr>
       </table>
 
       <div class="footer">
