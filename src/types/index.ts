@@ -84,6 +84,8 @@ export interface FichaTecnica {
   fechaEntrega: Date | null;
   estado: EstadoFicha;
   publicToken?: string;
+  origen?: 'historico' | 'fisica' | 'digital';
+  boletaFisica?: string | null;
 }
 
 export type Tecnico = 'JORGE' | 'JEAN';

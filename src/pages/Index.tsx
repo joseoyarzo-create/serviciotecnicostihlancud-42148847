@@ -322,6 +322,10 @@ const Index = () => {
         <PendientesRetiro fichas={allFichas} />
 
         {/* Quick Actions */}
+        <section className="flex flex-wrap gap-3 mb-6">
+          <Button asChild><Link to="/recepciones"><Plus className="mr-2 h-4 w-4" />Nueva recepción digital</Link></Button>
+          <Button variant="outline" asChild><Link to="/ingresar-maquina-reparada"><Wrench className="mr-2 h-4 w-4" />Ingresar máquina reparada</Link></Button>
+        </section>
         <section className="grid md:grid-cols-2 gap-6 mb-12">
           <Link to="/ficha-tecnica">
             <div className="form-section hover-lift cursor-pointer border-2 border-primary/20 hover:border-primary transition-colors animate-fade-in" style={{ animationDelay: '0.4s' }}>

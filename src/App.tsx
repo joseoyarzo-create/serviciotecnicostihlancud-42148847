@@ -15,6 +15,7 @@ import Login from "./pages/Login";
 import OAuthConsent from "./pages/OAuthConsent";
 import NotFound from "./pages/NotFound";
 import FichaPublica from "./pages/FichaPublica";
+import Recepciones from "./pages/Recepciones";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,8 @@ const App = () => (
             <Route path="/f/:token" element={<FichaPublica />} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/ficha-tecnica" element={<ProtectedRoute><FichaTecnica /></ProtectedRoute>} />
+            <Route path="/recepciones" element={<ProtectedRoute><Recepciones /></ProtectedRoute>} />
+            <Route path="/ingresar-maquina-reparada" element={<ProtectedRoute><FichaTecnica /></ProtectedRoute>} />
             <Route path="/ficha-tecnica/:id" element={<ProtectedRoute><FichaTecnica /></ProtectedRoute>} />
             <Route path="/repuestos" element={<ProtectedRoute><Repuestos /></ProtectedRoute>} />
             <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
