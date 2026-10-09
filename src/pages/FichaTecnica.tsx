@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { z } from 'zod';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { FichaTecnica, Cliente, RepuestoFicha, Tecnico, EstadoFicha } from '@/types';
@@ -38,6 +39,11 @@ const BenefitBadge = ({ label, achieved }: { label: string; achieved: boolean })
 
 const FichaTecnicaPage = () => {
   const { id } = useParams();
+  const location = useLocation();
+  const physical = location.pathname === '/ingresar-maquina-reparada';
+  const [origen, setOrigen] = useState<FichaTecnica['origen']>(physical ? 'fisica' : undefined);
+  const operationId = useRef(crypto.randomUUID());
+  const saveLock = useRef(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -45,7 +51,7 @@ const FichaTecnicaPage = () => {
   const [modelosFull, setModelosFull] = useState<{ modelo: string; despieceUrl?: string | null }[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(!!id);
-  const [exportType, setExportType] = useState<'pdf' | 'print'>('pdf');
+  const [exportType, setExportType] = useState<'pdf' | 'print' | 'save'>('pdf');
 
   // Form state
   const [numeroBoleta, setNumeroBoleta] = useState('');
@@ -97,6 +103,10 @@ const FichaTecnicaPage = () => {
         setTecnico(ficha.tecnico);
         setEstado(ficha.estado || 'TALLER');
         setPublicToken(ficha.publicToken);
+        setOrigen(ficha.origen);
+        const parts = ficha.tipoAveria.split(/\n?\n?Comentarios:\s*/);
+        setTipoAveria(parts[0]);
+        setComentarios(parts.slice(1).join('Comentarios: '));
       } else {
         toast({ title: 'Error', description: 'Ficha no encontrada', variant: 'destructive' });
         navigate('/');
@@ -116,7 +126,7 @@ const FichaTecnicaPage = () => {
         getModelos(),
       ];
 
-      if (!id) {
+      if (!id && !physical) {
         promises.push(getNextFolio());
       }
 
@@ -128,7 +138,7 @@ const FichaTecnicaPage = () => {
       setModelos(modelosData.map((m: any) => m.modelo));
       setModelosFull(modelosData.map((m: any) => ({ modelo: m.modelo, despieceUrl: m.despieceUrl })));
 
-      if (!id && results[2]) {
+      if (!id && !physical && results[2]) {
         setNumeroBoleta(results[2]);
       }
     } catch (error) {
@@ -160,8 +170,9 @@ const FichaTecnicaPage = () => {
     setModeloMaquina(modelo);
   };
 
-  const handleSubmit = async (type: 'pdf' | 'print') => {
-    if (!numeroBoleta.trim()) {
+  const handleSubmit = async (type: 'pdf' | 'print' | 'save') => {
+    if (saveLock.current) return;
+    if (!physical && !numeroBoleta.trim()) {
       toast({ title: 'Error', description: 'El número de boleta es requerido', variant: 'destructive' });
       return;
     }
@@ -181,7 +192,10 @@ const FichaTecnicaPage = () => {
       toast({ title: 'Error', description: 'La sección Comentarios es obligatoria', variant: 'destructive' });
       return;
     }
+    const valid = z.object({ nombre: z.string().trim().min(1).max(100), telefono: z.string().max(40), modelo: z.string().trim().min(1).max(100), serie: z.string().max(100), boleta: z.string().max(100), averia: z.string().max(2000), comentarios: z.string().trim().min(1).max(2000) }).safeParse({ nombre: clienteNombre, telefono: clienteTelefono, modelo: modeloMaquina, serie: numeroSerie, boleta: numeroBoleta, averia: tipoAveria, comentarios });
+    if (!valid.success) { toast({ title: 'Datos inválidos', description: 'Revise los campos: nombre/modelo/serie/boleta hasta 100 caracteres, teléfono 40 y textos 2000.', variant: 'destructive' }); return; }
 
+    saveLock.current = true;
     setIsLoading(true);
     setExportType(type);
 
@@ -209,9 +223,11 @@ const FichaTecnicaPage = () => {
       }
 
       const ficha: FichaTecnica = {
-        id: id || generateId(),
-        numeroBoleta: numeroBoleta.trim(),
-        numeroServicio: numeroBoleta.trim(),
+        id: id || operationId.current,
+        numeroBoleta: numeroBoleta.trim() || `F-${operationId.current.slice(0, 8)}`,
+        numeroServicio: numeroBoleta.trim() || `F-${operationId.current.slice(0, 8)}`,
+        origen,
+        boletaFisica: physical || origen === 'fisica' ? numeroBoleta.trim() || null : undefined,
         fechaIngreso,
         fechaReparacion,
         cliente,
@@ -234,13 +250,17 @@ const FichaTecnicaPage = () => {
       if (type === 'pdf') {
         await generatePdfDocument(ficha);
         toast({ title: 'Éxito', description: `Ficha ${id ? 'actualizada' : 'guardada'} y PDF generado` });
-      } else {
+      } else if (type === 'print') {
         printFicha(ficha);
         toast({ title: 'Éxito', description: `Ficha ${id ? 'actualizada' : 'guardada'} y enviada a impresión` });
+      } else {
+        toast({ title: 'Ficha guardada', description: 'Reparación registrada sin emitir una boleta digital.' });
+        navigate(`/ficha-tecnica/${ficha.id}`);
       }
 
       // If we are editing, we don't necessarily want to reset the form, maybe just refresh data or stay there
       if (!id) {
+        operationId.current = crypto.randomUUID();
         // Reset form only if creating new
         setNumeroBoleta('');
         setClienteNombre('');
@@ -269,6 +289,7 @@ const FichaTecnicaPage = () => {
       console.error('Error:', error);
       toast({ title: 'Error', description: 'Error al generar el documento', variant: 'destructive' });
     } finally {
+      saveLock.current = false;
       setIsLoading(false);
     }
   };
@@ -282,14 +303,14 @@ const FichaTecnicaPage = () => {
   }
 
   // Al crear una ficha nueva, obligar a elegir el mecánico antes de rellenar datos
-  if (!id && !tecnico) {
+  if (!tecnico) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
         <main className="container mx-auto py-16 px-4 max-w-2xl">
           <div className="text-center mb-10">
             <Wrench className="h-12 w-12 text-primary mx-auto mb-4" />
-            <h1 className="text-3xl font-heading font-bold mb-2">Nueva Ficha Técnica</h1>
+            <h1 className="text-3xl font-heading font-bold mb-2">{physical ? 'Ingresar máquina reparada' : id ? 'Completar Ficha Técnica' : 'Nueva Ficha Técnica'}</h1>
             <p className="text-muted-foreground text-lg">Antes de comenzar, selecciona el mecánico encargado</p>
           </div>
           <div className="grid sm:grid-cols-2 gap-6">
@@ -316,7 +337,7 @@ const FichaTecnicaPage = () => {
       <main className="container mx-auto py-8 px-4">
         <div className="flex items-center gap-3 mb-8">
           <FileText className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-heading font-bold">{id ? 'Editar Ficha Técnica' : 'Nueva Ficha Técnica'}</h1>
+          <h1 className="text-3xl font-heading font-bold">{physical ? 'Ingresar máquina reparada' : id ? 'Editar Ficha Técnica' : 'Nueva Ficha Técnica'}</h1>
         </div>
 
         <div className="grid gap-6">
@@ -328,9 +349,11 @@ const FichaTecnicaPage = () => {
             </h2>
             <div className="grid md:grid-cols-3 gap-4">
               <div className="input-group">
-                <Label className="input-label">Nº Boleta *</Label>
+                <Label className="input-label">{physical || origen === 'fisica' ? 'Nº boleta física (opcional)' : origen === 'digital' ? 'Nº boleta digital' : 'Nº Boleta *'}</Label>
                 <Input
                   value={numeroBoleta}
+                  disabled={origen === 'digital'}
+                  maxLength={100}
                   onChange={(e) => setNumeroBoleta(e.target.value)}
                   placeholder="Ej: 12345"
                 />
@@ -712,6 +735,7 @@ const FichaTecnicaPage = () => {
 
           {/* Submit Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 animate-fade-in">
+            <Button onClick={() => handleSubmit('save')} disabled={isLoading} size="lg" variant="outline"><Save className="mr-2 h-5 w-5" />{isLoading && exportType === 'save' ? 'Guardando...' : 'Guardar ficha'}</Button>
             <Button
               onClick={() => handleSubmit('pdf')}
               disabled={isLoading}

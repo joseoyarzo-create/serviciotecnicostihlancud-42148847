@@ -28,6 +28,7 @@ const Header = () => {
   const navItems = [
     { path: '/', label: 'Inicio', icon: Home },
     { path: '/ficha-tecnica', label: 'Nueva Ficha', icon: FileText },
+    { path: '/recepciones', label: 'Recepción', icon: FileText },
     { path: '/repuestos', label: 'Repuestos', icon: Package },
     { path: '/clientes', label: 'Clientes', icon: Users },
     { path: '/stats', label: 'Estadísticas', icon: TrendingUp },
