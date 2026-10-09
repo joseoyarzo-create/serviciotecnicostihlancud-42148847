@@ -419,6 +419,8 @@ export const getFichas = async (): Promise<FichaTecnica[]> => {
     tecnico: f.mecanico as 'JORGE' | 'JEAN',
     estado: (['TALLER','ESPERA_REPUESTO','LISTO','ENTREGADA'].includes(f.cliente_direccion ?? '') ? f.cliente_direccion! : 'TALLER') as import('@/types').EstadoFicha,
     publicToken: (f as { public_token?: string }).public_token,
+    origen: f.origen as FichaTecnica['origen'],
+    boletaFisica: f.boleta_fisica,
   }));
 };
 
@@ -455,12 +457,16 @@ export const getFichaById = async (id: string): Promise<FichaTecnica | null> => 
     tecnico: data.mecanico as 'JORGE' | 'JEAN',
     estado: (['TALLER','ESPERA_REPUESTO','LISTO','ENTREGADA'].includes(data.cliente_direccion ?? '') ? data.cliente_direccion! : 'TALLER') as import('@/types').EstadoFicha,
     publicToken: (data as { public_token?: string }).public_token,
+    origen: data.origen as FichaTecnica['origen'],
+    boletaFisica: data.boleta_fisica,
   };
 };
 
 export const saveFicha = async (ficha: FichaTecnica): Promise<void> => {
   const fichaData = {
     numero_boleta: ficha.numeroBoleta,
+    ...(ficha.origen ? { origen: ficha.origen } : {}),
+    ...(ficha.origen === 'fisica' ? { boleta_fisica: ficha.boletaFisica || null } : {}),
     fecha_ingreso: ficha.fechaIngreso.toISOString(),
     fecha_reparacion: ficha.fechaReparacion?.toISOString() || null,
     fecha_entrega: ficha.fechaEntrega?.toISOString() || null,
