@@ -76,6 +76,7 @@ export type Database = {
       }
       fichas: {
         Row: {
+          boleta_fisica: string | null
           cliente_direccion: string | null
           cliente_nombre: string
           cliente_telefono: string | null
@@ -89,6 +90,7 @@ export type Database = {
           numero_boleta: string
           numero_serie: string | null
           observaciones: string | null
+          origen: string
           public_token: string
           repuestos: Json | null
           servicios: Json | null
@@ -97,6 +99,7 @@ export type Database = {
           whatsapp_notificado_at: string | null
         }
         Insert: {
+          boleta_fisica?: string | null
           cliente_direccion?: string | null
           cliente_nombre: string
           cliente_telefono?: string | null
@@ -110,6 +113,7 @@ export type Database = {
           numero_boleta: string
           numero_serie?: string | null
           observaciones?: string | null
+          origen?: string
           public_token?: string
           repuestos?: Json | null
           servicios?: Json | null
@@ -118,6 +122,7 @@ export type Database = {
           whatsapp_notificado_at?: string | null
         }
         Update: {
+          boleta_fisica?: string | null
           cliente_direccion?: string | null
           cliente_nombre?: string
           cliente_telefono?: string | null
@@ -131,6 +136,7 @@ export type Database = {
           numero_boleta?: string
           numero_serie?: string | null
           observaciones?: string | null
+          origen?: string
           public_token?: string
           repuestos?: Json | null
           servicios?: Json | null
@@ -157,6 +163,66 @@ export type Database = {
           nombre?: string
         }
         Relationships: []
+      }
+      recepciones: {
+        Row: {
+          cadena: boolean
+          cliente_id: string | null
+          created_at: string
+          espada: boolean
+          fecha_estimada: string | null
+          ficha_id: string
+          funda: boolean
+          id: string
+          numero: string
+          observaciones: string
+          solicitud_id: string
+          updated_at: string
+        }
+        Insert: {
+          cadena?: boolean
+          cliente_id?: string | null
+          created_at?: string
+          espada?: boolean
+          fecha_estimada?: string | null
+          ficha_id: string
+          funda?: boolean
+          id?: string
+          numero: string
+          observaciones?: string
+          solicitud_id: string
+          updated_at?: string
+        }
+        Update: {
+          cadena?: boolean
+          cliente_id?: string | null
+          created_at?: string
+          espada?: boolean
+          fecha_estimada?: string | null
+          ficha_id?: string
+          funda?: boolean
+          id?: string
+          numero?: string
+          observaciones?: string
+          solicitud_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recepciones_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recepciones_ficha_id_fkey"
+            columns: ["ficha_id"]
+            isOneToOne: true
+            referencedRelation: "fichas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       repuestos: {
         Row: {
@@ -187,6 +253,42 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      crear_recepcion_digital: {
+        Args: {
+          _cadena: boolean
+          _espada: boolean
+          _fecha: string
+          _fecha_estimada?: string
+          _funda: boolean
+          _modelo: string
+          _motivo: string
+          _nombre: string
+          _observaciones: string
+          _serie: string
+          _solicitud: string
+          _telefono: string
+        }
+        Returns: {
+          cadena: boolean
+          cliente_id: string | null
+          created_at: string
+          espada: boolean
+          fecha_estimada: string | null
+          ficha_id: string
+          funda: boolean
+          id: string
+          numero: string
+          observaciones: string
+          solicitud_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "recepciones"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_ficha_publica: {
         Args: { _token: string }
         Returns: {
