@@ -55,6 +55,7 @@ const FichaTecnicaPage = () => {
 
   // Form state
   const [numeroBoleta, setNumeroBoleta] = useState('');
+  const [boletaFisica, setBoletaFisica] = useState('');
   const [fechaIngreso, setFechaIngreso] = useState<Date>(new Date());
   const [fechaReparacion, setFechaReparacion] = useState<Date>(new Date());
   const [fechaEntrega, setFechaEntrega] = useState<Date | null>(null);
@@ -73,6 +74,7 @@ const FichaTecnicaPage = () => {
   const [publicToken, setPublicToken] = useState<string | undefined>();
 
   useEffect(() => {
+    if (!id) setOrigen(physical ? 'fisica' : undefined);
     const loadConfig = async () => {
       const data = await getConfigSistema();
       setConfig(data);
@@ -104,6 +106,7 @@ const FichaTecnicaPage = () => {
         setEstado(ficha.estado || 'TALLER');
         setPublicToken(ficha.publicToken);
         setOrigen(ficha.origen);
+        setBoletaFisica(ficha.boletaFisica ?? '');
         const parts = ficha.tipoAveria.split(/\n?\n?Comentarios:\s*/);
         setTipoAveria(parts[0]);
         setComentarios(parts.slice(1).join('Comentarios: '));
@@ -172,7 +175,7 @@ const FichaTecnicaPage = () => {
 
   const handleSubmit = async (type: 'pdf' | 'print' | 'save') => {
     if (saveLock.current) return;
-    if (!physical && !numeroBoleta.trim()) {
+    if (!physical && origen !== 'fisica' && !numeroBoleta.trim()) {
       toast({ title: 'Error', description: 'El número de boleta es requerido', variant: 'destructive' });
       return;
     }
@@ -192,7 +195,7 @@ const FichaTecnicaPage = () => {
       toast({ title: 'Error', description: 'La sección Comentarios es obligatoria', variant: 'destructive' });
       return;
     }
-    const valid = z.object({ nombre: z.string().trim().min(1).max(100), telefono: z.string().max(40), modelo: z.string().trim().min(1).max(100), serie: z.string().max(100), boleta: z.string().max(100), averia: z.string().max(2000), comentarios: z.string().trim().min(1).max(2000) }).safeParse({ nombre: clienteNombre, telefono: clienteTelefono, modelo: modeloMaquina, serie: numeroSerie, boleta: numeroBoleta, averia: tipoAveria, comentarios });
+    const valid = z.object({ nombre: z.string().trim().min(1).max(100), telefono: z.string().max(40), modelo: z.string().trim().min(1).max(100), serie: z.string().max(100), boleta: z.string().max(100), averia: z.string().max(2000), comentarios: z.string().trim().min(1).max(2000) }).safeParse({ nombre: clienteNombre, telefono: clienteTelefono, modelo: modeloMaquina, serie: numeroSerie, boleta: physical || origen === 'fisica' ? boletaFisica : numeroBoleta, averia: tipoAveria, comentarios });
     if (!valid.success) { toast({ title: 'Datos inválidos', description: 'Revise los campos: nombre/modelo/serie/boleta hasta 100 caracteres, teléfono 40 y textos 2000.', variant: 'destructive' }); return; }
 
     saveLock.current = true;
@@ -224,10 +227,10 @@ const FichaTecnicaPage = () => {
 
       const ficha: FichaTecnica = {
         id: id || operationId.current,
-        numeroBoleta: numeroBoleta.trim() || `F-${operationId.current.slice(0, 8)}`,
-        numeroServicio: numeroBoleta.trim() || `F-${operationId.current.slice(0, 8)}`,
+        numeroBoleta: physical ? `F-${operationId.current}` : numeroBoleta.trim(),
+        numeroServicio: physical ? `F-${operationId.current}` : numeroBoleta.trim(),
         origen,
-        boletaFisica: physical || origen === 'fisica' ? numeroBoleta.trim() || null : undefined,
+        boletaFisica: physical || origen === 'fisica' ? boletaFisica.trim() || null : undefined,
         fechaIngreso,
         fechaReparacion,
         cliente,
@@ -263,6 +266,7 @@ const FichaTecnicaPage = () => {
         operationId.current = crypto.randomUUID();
         // Reset form only if creating new
         setNumeroBoleta('');
+        setBoletaFisica('');
         setClienteNombre('');
         setClienteTelefono('');
         setSelectedClienteId(null);
@@ -351,10 +355,10 @@ const FichaTecnicaPage = () => {
               <div className="input-group">
                 <Label className="input-label">{physical || origen === 'fisica' ? 'Nº boleta física (opcional)' : origen === 'digital' ? 'Nº boleta digital' : 'Nº Boleta *'}</Label>
                 <Input
-                  value={numeroBoleta}
+                  value={physical || origen === 'fisica' ? boletaFisica : numeroBoleta}
                   disabled={origen === 'digital'}
                   maxLength={100}
-                  onChange={(e) => setNumeroBoleta(e.target.value)}
+                  onChange={(e) => physical || origen === 'fisica' ? setBoletaFisica(e.target.value) : setNumeroBoleta(e.target.value)}
                   placeholder="Ej: 12345"
                 />
               </div>

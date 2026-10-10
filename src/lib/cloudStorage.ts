@@ -145,6 +145,8 @@ export const getFichasByClienteNombre = async (nombre: string): Promise<FichaTec
     id: f.id,
     numeroBoleta: f.numero_boleta,
     numeroServicio: f.numero_boleta,
+    origen: f.origen as FichaTecnica['origen'],
+    boletaFisica: f.boleta_fisica,
     fechaIngreso: new Date(f.fecha_ingreso),
     fechaReparacion: f.fecha_reparacion ? new Date(f.fecha_reparacion) : null,
     fechaEntrega: f.fecha_entrega ? new Date(f.fecha_entrega) : null,
@@ -634,6 +636,8 @@ export const getNextFolio = async (): Promise<string> => {
     const { data, error } = await supabase
       .from('fichas')
       .select('numero_boleta')
+      .neq('origen', 'digital')
+      .neq('origen', 'fisica')
       .order('created_at', { ascending: false })
       .limit(1);
 

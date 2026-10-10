@@ -8,6 +8,13 @@
       "when": 1791560351492,
       "tag": "0000_recepciones_digitales_independientes",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791640942369,
+      "tag": "0001_corregir_recepcion_y_conservar_motivo",
+      "breakpoints": true
     }
   ]
 }
