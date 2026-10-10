@@ -29,7 +29,7 @@ export function imprimirBoleta(html: string) {
   const w = window.open('', '_blank', 'width=440,height=800');
   if (!w) throw new Error('Permite las ventanas emergentes para imprimir. La recepción sigue guardada.');
   w.document.open(); w.document.write(html); w.document.close();
-  Promise.all(Array.from(w.document.images).map(img => img.complete ? Promise.resolve() : new Promise(resolve => { img.onload = resolve; img.onerror = resolve; }))).then(() => {
+  Promise.all(Array.from(w.document.images).map(img => img.complete ? Promise.resolve() : new Promise(resolve => { img.onload = resolve; img.onerror = resolve; setTimeout(resolve, 5000); }))).then(() => {
     w.focus(); w.print();
   });
 }
