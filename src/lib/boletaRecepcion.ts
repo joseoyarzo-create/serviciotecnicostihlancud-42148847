@@ -11,7 +11,7 @@ export function boletaHtml(r: Recepcion, f: FichaTecnica, papel: '80' | '58' = '
   @page { size: ${papel}mm auto; margin: 0; }
   *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:12px Arial,sans-serif}
   .receipt{width:${papel === '80' ? '72' : '48'}mm;margin:0 auto;padding:3mm 0 5mm;overflow-wrap:anywhere}
-  header{text-align:center;border-bottom:1px solid var(--ink);padding-bottom:2mm}img{width:26mm;max-height:10mm;object-fit:contain;filter:grayscale(1) contrast(2)}
+  header{text-align:center;border-bottom:1px solid var(--ink);padding-bottom:2mm}img{width:26mm;max-height:16mm;object-fit:contain;filter:grayscale(1) contrast(2)}
   h1{font-size:17px;margin:3mm 0 1mm}h2{font-size:15px;margin:3mm 0}p{margin:1.5mm 0;line-height:1.3}.contact{font-size:10px}
   .number{font-size:23px;font-weight:bold;text-align:center;margin:2mm 0}.legend{text-align:center;font-weight:bold;font-size:11px}
   .accessories{display:flex;justify-content:space-between;gap:1mm;font-size:11px;border-bottom:1px solid var(--ink);padding-bottom:2mm}
