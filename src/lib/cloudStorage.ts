@@ -634,6 +634,7 @@ export const getNextFolio = async (): Promise<string> => {
     const { data, error } = await supabase
       .from('fichas')
       .select('numero_boleta')
+      .neq('origen', 'digital')
       .order('created_at', { ascending: false })
       .limit(1);
 

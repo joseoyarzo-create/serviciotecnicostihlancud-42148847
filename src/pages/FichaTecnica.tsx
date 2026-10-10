@@ -55,6 +55,7 @@ const FichaTecnicaPage = () => {
 
   // Form state
   const [numeroBoleta, setNumeroBoleta] = useState('');
+  const [boletaFisica, setBoletaFisica] = useState('');
   const [fechaIngreso, setFechaIngreso] = useState<Date>(new Date());
   const [fechaReparacion, setFechaReparacion] = useState<Date>(new Date());
   const [fechaEntrega, setFechaEntrega] = useState<Date | null>(null);
@@ -104,6 +105,7 @@ const FichaTecnicaPage = () => {
         setEstado(ficha.estado || 'TALLER');
         setPublicToken(ficha.publicToken);
         setOrigen(ficha.origen);
+        setBoletaFisica(ficha.boletaFisica ?? '');
         const parts = ficha.tipoAveria.split(/\n?\n?Comentarios:\s*/);
         setTipoAveria(parts[0]);
         setComentarios(parts.slice(1).join('Comentarios: '));
@@ -172,7 +174,7 @@ const FichaTecnicaPage = () => {
 
   const handleSubmit = async (type: 'pdf' | 'print' | 'save') => {
     if (saveLock.current) return;
-    if (!physical && !numeroBoleta.trim()) {
+    if (!physical && origen !== 'fisica' && !numeroBoleta.trim()) {
       toast({ title: 'Error', description: 'El número de boleta es requerido', variant: 'destructive' });
       return;
     }
@@ -224,10 +226,10 @@ const FichaTecnicaPage = () => {
 
       const ficha: FichaTecnica = {
         id: id || operationId.current,
-        numeroBoleta: numeroBoleta.trim() || `F-${operationId.current.slice(0, 8)}`,
-        numeroServicio: numeroBoleta.trim() || `F-${operationId.current.slice(0, 8)}`,
+        numeroBoleta: physical ? `F-${operationId.current}` : numeroBoleta.trim(),
+        numeroServicio: physical ? `F-${operationId.current}` : numeroBoleta.trim(),
         origen,
-        boletaFisica: physical || origen === 'fisica' ? numeroBoleta.trim() || null : undefined,
+        boletaFisica: physical || origen === 'fisica' ? boletaFisica.trim() || null : undefined,
         fechaIngreso,
         fechaReparacion,
         cliente,
@@ -263,6 +265,7 @@ const FichaTecnicaPage = () => {
         operationId.current = crypto.randomUUID();
         // Reset form only if creating new
         setNumeroBoleta('');
+        setBoletaFisica('');
         setClienteNombre('');
         setClienteTelefono('');
         setSelectedClienteId(null);
@@ -351,10 +354,10 @@ const FichaTecnicaPage = () => {
               <div className="input-group">
                 <Label className="input-label">{physical || origen === 'fisica' ? 'Nº boleta física (opcional)' : origen === 'digital' ? 'Nº boleta digital' : 'Nº Boleta *'}</Label>
                 <Input
-                  value={numeroBoleta}
+                  value={physical || origen === 'fisica' ? boletaFisica : numeroBoleta}
                   disabled={origen === 'digital'}
                   maxLength={100}
-                  onChange={(e) => setNumeroBoleta(e.target.value)}
+                  onChange={(e) => physical || origen === 'fisica' ? setBoletaFisica(e.target.value) : setNumeroBoleta(e.target.value)}
                   placeholder="Ej: 12345"
                 />
               </div>

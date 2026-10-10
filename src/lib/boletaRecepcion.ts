@@ -1,6 +1,6 @@
 import type { Recepcion } from './recepciones';
 import type { FichaTecnica } from '@/types';
-import stihlLogo from '@/assets/stihl-logo.jpg';
+import sotaventoLogo from '@/assets/sotavento-logo.asset.json';
 
 const escape = (value: string) => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] ?? c));
 export function boletaHtml(r: Recepcion, f: FichaTecnica, papel: '80' | '58' = '80') {
@@ -16,11 +16,11 @@ export function boletaHtml(r: Recepcion, f: FichaTecnica, papel: '80' | '58' = '
   .accessories{display:flex;justify-content:space-between;gap:1mm;font-size:11px;border-bottom:1px solid var(--ink);padding-bottom:2mm}
   .section{border-top:1px solid var(--ink);margin-top:3mm;padding-top:2mm;white-space:pre-wrap}.conditions{font-size:10px;line-height:1.35;border-top:1px solid var(--ink);margin-top:3mm;padding-top:2mm}
   footer{text-align:center;border-top:2px solid var(--ink);margin-top:3mm;padding-top:2mm;font-size:11px;font-weight:bold}
-  </style></head><body><article class="receipt"><header><img src="${new URL(stihlLogo, window.location.origin).href}" alt="STIHL"><p><b>COMERCIAL SOTAVENTO LTDA.</b></p><p>Distribuidor Oficial STIHL</p><div class="contact">Pudeto 351 - Ancud<br>Avlador Barrientos s/n - Achao<br>sotaventoancud@gmail.com<br>sotaventoachao@gmail.com<br>+56 65 2622214 · +56 9 9773 7088</div></header>
+  </style></head><body><article class="receipt"><header><img src="${new URL(sotaventoLogo.url, window.location.origin).href}" alt="Sotavento"><p><b>COMERCIAL SOTAVENTO LTDA.</b></p><p>Distribuidor Oficial STIHL</p><div class="contact">Pudeto 351 - Ancud<br>Aviador Barrientos s/n - Achao<br>sotaventoancud@gmail.com<br>sotaventoachao@gmail.com<br>+56 65 2622214 · +56 9 9773 7088</div></header>
   <h1>Cartola Reparación</h1><div class="number">Nº ${escape(r.numero)}</div><p class="legend">BOLETA GENERADA POR SISTEMA</p>
   <p class="accessories"><span>Cadena: ${r.cadena ? 'SÍ' : 'NO'}</span><span>Espada: ${r.espada ? 'SÍ' : 'NO'}</span><span>Funda: ${r.funda ? 'SÍ' : 'NO'}</span></p>
   ${field('Motor Nº', f.numeroSerie)}${field('Modelo', f.modeloMaquina)}${field('Nombre', f.cliente.nombre)}${field('Fecha', f.fechaIngreso.toLocaleDateString('es-CL'))}${field('F. entrega estimada', r.fecha_estimada ? r.fecha_estimada.split('-').reverse().join('/') : '')}
-  <div class="section"><b>Motivo de ingreso</b><p>${escape(f.tipoAveria)}</p></div>${r.observaciones ? `<div class="section"><b>Observaciones</b><p>${escape(r.observaciones)}</p></div>` : ''}${field('Teléfono', f.cliente.telefono)}
+  <div class="section"><b>Motivo de ingreso</b><p>${escape(r.motivo_ingreso || f.tipoAveria)}</p></div>${r.observaciones ? `<div class="section"><b>Observaciones</b><p>${escape(r.observaciones)}</p></div>` : ''}${field('Teléfono', f.cliente.telefono)}
   <div class="conditions"><b>IMPORTANTE: Art. 42 LEY DE COMERCIO</b><p>• Las Máquinas no retiradas dentro de los siguientes 60 días será, enviadas a Bodega y la Empresa no se responsabiliza por deterioros producidos.</p><p>• Las Máquinas no retiradas dentro de 1 año según el artículo 42 de la ley de comercio será considerado como abandonada por sus propietarios, por lo que la Empresa podrá disponer de ella.</p><p>• El valor del presupuesto, debe sufrir modificaciones, si durante el proceso de reparación se detectan desperfectos no advertidos en el diagnóstico original que impliquen gastos adicionales. Esta variación en el caso de reparación será informada al cliente antes de continuar con la reparación del equipo.</p><p>• Este presupuesto tiene una vigencia de 10 días desde la fecha de emisión.</p><p><b>• EL PRESUPUESTO RECHAZADO TENDRÁ UN COSTO DE INSPECCIÓN.</b></p></div>
   <footer><u>COMPROBANTE OBLIGATORIO PARA RETIRO</u><p>BODEGAJE DESPUÉS DE 15 DÍAS SE APLICARÁ $500 P/DÍA</p><p>RETIRO: PUDETO 351 - ANCUD<br>FONO: 652622214</p><p>HORARIO: LUNES A VIERNES<br>9:00 A 13:00 Y 14:30 A 19:00<br>SÁBADO 9:30 A 13:00</p></footer></article></body></html>`;
 }
