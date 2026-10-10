@@ -174,6 +174,7 @@ export type Database = {
           ficha_id: string
           funda: boolean
           id: string
+          motivo_ingreso: string
           numero: string
           observaciones: string
           solicitud_id: string
@@ -188,6 +189,7 @@ export type Database = {
           ficha_id: string
           funda?: boolean
           id?: string
+          motivo_ingreso?: string
           numero: string
           observaciones?: string
           solicitud_id: string
@@ -202,6 +204,7 @@ export type Database = {
           ficha_id?: string
           funda?: boolean
           id?: string
+          motivo_ingreso?: string
           numero?: string
           observaciones?: string
           solicitud_id?: string
@@ -277,6 +280,7 @@ export type Database = {
           ficha_id: string
           funda: boolean
           id: string
+          motivo_ingreso: string
           numero: string
           observaciones: string
           solicitud_id: string
