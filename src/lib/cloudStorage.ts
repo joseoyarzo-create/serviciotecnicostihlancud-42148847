@@ -635,6 +635,7 @@ export const getNextFolio = async (): Promise<string> => {
       .from('fichas')
       .select('numero_boleta')
       .neq('origen', 'digital')
+      .neq('origen', 'fisica')
       .order('created_at', { ascending: false })
       .limit(1);
 

@@ -74,6 +74,7 @@ const FichaTecnicaPage = () => {
   const [publicToken, setPublicToken] = useState<string | undefined>();
 
   useEffect(() => {
+    if (!id) setOrigen(physical ? 'fisica' : undefined);
     const loadConfig = async () => {
       const data = await getConfigSistema();
       setConfig(data);
@@ -194,7 +195,7 @@ const FichaTecnicaPage = () => {
       toast({ title: 'Error', description: 'La sección Comentarios es obligatoria', variant: 'destructive' });
       return;
     }
-    const valid = z.object({ nombre: z.string().trim().min(1).max(100), telefono: z.string().max(40), modelo: z.string().trim().min(1).max(100), serie: z.string().max(100), boleta: z.string().max(100), averia: z.string().max(2000), comentarios: z.string().trim().min(1).max(2000) }).safeParse({ nombre: clienteNombre, telefono: clienteTelefono, modelo: modeloMaquina, serie: numeroSerie, boleta: numeroBoleta, averia: tipoAveria, comentarios });
+    const valid = z.object({ nombre: z.string().trim().min(1).max(100), telefono: z.string().max(40), modelo: z.string().trim().min(1).max(100), serie: z.string().max(100), boleta: z.string().max(100), averia: z.string().max(2000), comentarios: z.string().trim().min(1).max(2000) }).safeParse({ nombre: clienteNombre, telefono: clienteTelefono, modelo: modeloMaquina, serie: numeroSerie, boleta: physical || origen === 'fisica' ? boletaFisica : numeroBoleta, averia: tipoAveria, comentarios });
     if (!valid.success) { toast({ title: 'Datos inválidos', description: 'Revise los campos: nombre/modelo/serie/boleta hasta 100 caracteres, teléfono 40 y textos 2000.', variant: 'destructive' }); return; }
 
     saveLock.current = true;

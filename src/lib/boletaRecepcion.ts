@@ -5,6 +5,7 @@ import sotaventoLogo from '@/assets/sotavento-logo.asset.json';
 const escape = (value: string) => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] ?? c));
 export function boletaHtml(r: Recepcion, f: FichaTecnica, papel: '80' | '58' = '80') {
   const field = (label: string, value: string) => `<p class="field"><b>${label}:</b> ${escape(value || '—')}</p>`;
+  const assetOrigin = window.location.hostname === 'localhost' ? 'https://serviciotecnicostihlancud.lovable.app' : window.location.origin;
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Recepción ${escape(r.numero)}</title><style>
   :root { --paper: #fff; --ink: #000; }
   @page { size: ${papel}mm auto; margin: 0; }
@@ -16,7 +17,7 @@ export function boletaHtml(r: Recepcion, f: FichaTecnica, papel: '80' | '58' = '
   .accessories{display:flex;justify-content:space-between;gap:1mm;font-size:11px;border-bottom:1px solid var(--ink);padding-bottom:2mm}
   .section{border-top:1px solid var(--ink);margin-top:3mm;padding-top:2mm;white-space:pre-wrap}.conditions{font-size:10px;line-height:1.35;border-top:1px solid var(--ink);margin-top:3mm;padding-top:2mm}
   footer{text-align:center;border-top:2px solid var(--ink);margin-top:3mm;padding-top:2mm;font-size:11px;font-weight:bold}
-  </style></head><body><article class="receipt"><header><img src="${new URL(sotaventoLogo.url, window.location.origin).href}" alt="Sotavento"><p><b>COMERCIAL SOTAVENTO LTDA.</b></p><p>Distribuidor Oficial STIHL</p><div class="contact">Pudeto 351 - Ancud<br>Aviador Barrientos s/n - Achao<br>sotaventoancud@gmail.com<br>sotaventoachao@gmail.com<br>+56 65 2622214 · +56 9 9773 7088</div></header>
+  </style></head><body><article class="receipt"><header><img src="${new URL(sotaventoLogo.url, assetOrigin).href}" alt="Sotavento"><p><b>COMERCIAL SOTAVENTO LTDA.</b></p><p>Distribuidor Oficial STIHL</p><div class="contact">Pudeto 351 - Ancud<br>Aviador Barrientos s/n - Achao<br>sotaventoancud@gmail.com<br>sotaventoachao@gmail.com<br>+56 65 2622214 · +56 9 9773 7088</div></header>
   <h1>Cartola Reparación</h1><div class="number">Nº ${escape(r.numero)}</div><p class="legend">BOLETA GENERADA POR SISTEMA</p>
   <p class="accessories"><span>Cadena: ${r.cadena ? 'SÍ' : 'NO'}</span><span>Espada: ${r.espada ? 'SÍ' : 'NO'}</span><span>Funda: ${r.funda ? 'SÍ' : 'NO'}</span></p>
   ${field('Motor Nº', f.numeroSerie)}${field('Modelo', f.modeloMaquina)}${field('Nombre', f.cliente.nombre)}${field('Fecha', f.fechaIngreso.toLocaleDateString('es-CL'))}${field('F. entrega estimada', r.fecha_estimada ? r.fecha_estimada.split('-').reverse().join('/') : '')}
