@@ -293,6 +293,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      eliminar_recepcion_digital: { Args: { _id: string }; Returns: undefined }
       get_ficha_publica: {
         Args: { _token: string }
         Returns: {
