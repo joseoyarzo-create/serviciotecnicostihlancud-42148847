@@ -13,6 +13,7 @@ export const recepcionSchema = z.object({
   cadena: z.boolean(), espada: z.boolean(), funda: z.boolean(),
   fecha: z.string().datetime(),
   fechaEstimada: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+  numeroBoleta: z.string().trim().max(20),
 });
 export type RecepcionDatos = z.input<typeof recepcionSchema>;
 export async function crearRecepcion(solicitud: string, datos: RecepcionDatos) {
@@ -22,6 +23,7 @@ export async function crearRecepcion(solicitud: string, datos: RecepcionDatos) {
     _modelo: d.modelo, _serie: d.serie, _motivo: d.motivo, _observaciones: d.observaciones,
     _cadena: d.cadena, _espada: d.espada, _funda: d.funda, _fecha: d.fecha,
     _fecha_estimada: d.fechaEstimada,
+    _numero_manual: d.numeroBoleta || null,
   });
   if (error) throw error;
   return data;
