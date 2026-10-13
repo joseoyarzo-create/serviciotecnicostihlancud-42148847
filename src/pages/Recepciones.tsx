@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { getClientes, getModelos, getFichaById } from '@/lib/cloudStorage';
-import { crearRecepcion, listarRecepciones, Recepcion, RecepcionDatos } from '@/lib/recepciones';
+import { crearRecepcion, eliminarRecepcion, listarRecepciones, Recepcion, RecepcionDatos } from '@/lib/recepciones';
 import { boletaHtml, imprimirBoleta } from '@/lib/boletaRecepcion';
 import type { Cliente } from '@/types';
 import { Plus, Printer, FileText, Wrench, Eye } from 'lucide-react';
