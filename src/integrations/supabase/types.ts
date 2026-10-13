@@ -256,43 +256,82 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      crear_recepcion_digital: {
-        Args: {
-          _cadena: boolean
-          _espada: boolean
-          _fecha: string
-          _fecha_estimada?: string
-          _funda: boolean
-          _modelo: string
-          _motivo: string
-          _nombre: string
-          _observaciones: string
-          _serie: string
-          _solicitud: string
-          _telefono: string
-        }
-        Returns: {
-          cadena: boolean
-          cliente_id: string | null
-          created_at: string
-          espada: boolean
-          fecha_estimada: string | null
-          ficha_id: string
-          funda: boolean
-          id: string
-          motivo_ingreso: string
-          numero: string
-          observaciones: string
-          solicitud_id: string
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "recepciones"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
+      crear_recepcion_digital:
+        | {
+            Args: {
+              _cadena: boolean
+              _espada: boolean
+              _fecha: string
+              _fecha_estimada?: string
+              _funda: boolean
+              _modelo: string
+              _motivo: string
+              _nombre: string
+              _observaciones: string
+              _serie: string
+              _solicitud: string
+              _telefono: string
+            }
+            Returns: {
+              cadena: boolean
+              cliente_id: string | null
+              created_at: string
+              espada: boolean
+              fecha_estimada: string | null
+              ficha_id: string
+              funda: boolean
+              id: string
+              motivo_ingreso: string
+              numero: string
+              observaciones: string
+              solicitud_id: string
+              updated_at: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "recepciones"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: {
+              _cadena: boolean
+              _espada: boolean
+              _fecha: string
+              _fecha_estimada?: string
+              _funda: boolean
+              _modelo: string
+              _motivo: string
+              _nombre: string
+              _numero_manual?: string
+              _observaciones: string
+              _serie: string
+              _solicitud: string
+              _telefono: string
+            }
+            Returns: {
+              cadena: boolean
+              cliente_id: string | null
+              created_at: string
+              espada: boolean
+              fecha_estimada: string | null
+              ficha_id: string
+              funda: boolean
+              id: string
+              motivo_ingreso: string
+              numero: string
+              observaciones: string
+              solicitud_id: string
+              updated_at: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "recepciones"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
       eliminar_recepcion_digital: { Args: { _id: string }; Returns: undefined }
       get_ficha_publica: {
         Args: { _token: string }

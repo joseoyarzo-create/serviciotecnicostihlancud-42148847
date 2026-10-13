@@ -16,7 +16,7 @@ import { boletaHtml, imprimirBoleta } from '@/lib/boletaRecepcion';
 import type { Cliente } from '@/types';
 import { Plus, Printer, FileText, Wrench, Eye, Trash2 } from 'lucide-react';
 
-const empty = (): RecepcionDatos => ({ nombre: '', telefono: '', modelo: '', serie: '', motivo: '', observaciones: '', cadena: false, espada: false, funda: false, fecha: new Date().toISOString(), fechaEstimada: null });
+const empty = (): RecepcionDatos => ({ nombre: '', telefono: '', modelo: '', serie: '', motivo: '', observaciones: '', cadena: false, espada: false, funda: false, fecha: new Date().toISOString(), fechaEstimada: null, numeroBoleta: '' });
 export default function RecepcionesPage() {
   const { toast } = useToast();
   const [datos, setDatos] = useState(empty);
@@ -46,7 +46,8 @@ export default function RecepcionesPage() {
       setGuardada(r); setRecepciones(old => [r, ...old.filter(x => x.id !== r.id)]);
       toast({ title: 'Recepción registrada', description: `${r.numero}: ficha técnica inicial creada.` });
     } catch (e) {
-      setError(e instanceof z.ZodError ? e.issues[0]?.message ?? 'Revise los datos' : 'No se pudo guardar. Puede reintentar sin duplicar la recepción.');
+      const msg = e instanceof z.ZodError ? e.issues[0]?.message ?? 'Revise los datos' : e instanceof Error && e.message.includes('ya existe') ? e.message : 'No se pudo guardar. Puede reintentar sin duplicar la recepción.';
+      setError(msg);
     } finally { lock.current = false; setSaving(false); }
   };
   const eliminar = async (r: Recepcion) => {
@@ -75,6 +76,7 @@ export default function RecepcionesPage() {
           <div className="input-group"><Label htmlFor="recepcion-telefono">Teléfono</Label><Input id="recepcion-telefono" maxLength={40} value={datos.telefono} onChange={e => set('telefono', e.target.value)} /></div>
           <div className="input-group"><Label htmlFor="recepcion-modelo">Modelo *</Label><Input id="recepcion-modelo" required maxLength={100} list="recepcion-modelos" value={datos.modelo} onChange={e => set('modelo', e.target.value)} /><datalist id="recepcion-modelos">{modelos.map(m => <option key={m} value={m} />)}</datalist></div>
           <div className="input-group"><Label htmlFor="recepcion-serie">Motor Nº / número de serie</Label><Input id="recepcion-serie" maxLength={100} value={datos.serie} onChange={e => set('serie', e.target.value)} /></div>
+          <div className="input-group"><Label htmlFor="recepcion-numero">Nº de boleta <span className="text-muted-foreground">(opcional)</span></Label><Input id="recepcion-numero" className="w-40" maxLength={20} placeholder="Automático" value={datos.numeroBoleta} onChange={e => set('numeroBoleta', e.target.value)} /></div>
           <div className="input-group"><Label htmlFor="recepcion-fecha">Fecha de recepción *</Label><Input id="recepcion-fecha" type="date" required value={datos.fecha.slice(0,10)} onChange={e => { if (e.target.value) set('fecha', new Date(`${e.target.value}T12:00:00`).toISOString()); }} /></div>
           <div className="input-group"><Label htmlFor="recepcion-entrega">Fecha estimada de entrega</Label><Input id="recepcion-entrega" type="date" value={datos.fechaEstimada ?? ''} onChange={e => set('fechaEstimada', e.target.value || null)} /></div>
         </div></section>
