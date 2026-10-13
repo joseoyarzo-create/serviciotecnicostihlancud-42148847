@@ -14,7 +14,7 @@ import { getClientes, getModelos, getFichaById } from '@/lib/cloudStorage';
 import { crearRecepcion, eliminarRecepcion, listarRecepciones, Recepcion, RecepcionDatos } from '@/lib/recepciones';
 import { boletaHtml, imprimirBoleta } from '@/lib/boletaRecepcion';
 import type { Cliente } from '@/types';
-import { Plus, Printer, FileText, Wrench, Eye } from 'lucide-react';
+import { Plus, Printer, FileText, Wrench, Eye, Trash2 } from 'lucide-react';
 
 const empty = (): RecepcionDatos => ({ nombre: '', telefono: '', modelo: '', serie: '', motivo: '', observaciones: '', cadena: false, espada: false, funda: false, fecha: new Date().toISOString(), fechaEstimada: null });
 export default function RecepcionesPage() {
@@ -48,6 +48,15 @@ export default function RecepcionesPage() {
     } catch (e) {
       setError(e instanceof z.ZodError ? e.issues[0]?.message ?? 'Revise los datos' : 'No se pudo guardar. Puede reintentar sin duplicar la recepción.');
     } finally { lock.current = false; setSaving(false); }
+  };
+  const eliminar = async (r: Recepcion) => {
+    if (!window.confirm(`¿Eliminar la recepción ${r.numero}? También se eliminará su ficha técnica inicial.`)) return;
+    try {
+      await eliminarRecepcion(r.id);
+      setRecepciones(old => old.filter(x => x.id !== r.id));
+      if (guardada?.id === r.id) setGuardada(null);
+      toast({ title: 'Recepción eliminada', description: `${r.numero} y su ficha inicial fueron eliminadas.` });
+    } catch { toast({ title: 'Error', description: 'No se pudo eliminar la recepción.', variant: 'destructive' }); }
   };
   const ver = async (r: Recepcion) => {
     try {
