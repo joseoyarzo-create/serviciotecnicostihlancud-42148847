@@ -26,6 +26,10 @@ export async function crearRecepcion(solicitud: string, datos: RecepcionDatos) {
   if (error) throw error;
   return data;
 }
+export async function eliminarRecepcion(id: string) {
+  const { error } = await supabase.rpc('eliminar_recepcion_digital', { _id: id });
+  if (error) throw error;
+}
 export async function listarRecepciones() {
   const all: Recepcion[] = [];
   for (let from = 0; ; from += 1000) {

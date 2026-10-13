@@ -11,10 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { getClientes, getModelos, getFichaById } from '@/lib/cloudStorage';
-import { crearRecepcion, listarRecepciones, Recepcion, RecepcionDatos } from '@/lib/recepciones';
+import { crearRecepcion, eliminarRecepcion, listarRecepciones, Recepcion, RecepcionDatos } from '@/lib/recepciones';
 import { boletaHtml, imprimirBoleta } from '@/lib/boletaRecepcion';
 import type { Cliente } from '@/types';
-import { Plus, Printer, FileText, Wrench, Eye } from 'lucide-react';
+import { Plus, Printer, FileText, Wrench, Eye, Trash2 } from 'lucide-react';
 
 const empty = (): RecepcionDatos => ({ nombre: '', telefono: '', modelo: '', serie: '', motivo: '', observaciones: '', cadena: false, espada: false, funda: false, fecha: new Date().toISOString(), fechaEstimada: null });
 export default function RecepcionesPage() {
@@ -49,6 +49,15 @@ export default function RecepcionesPage() {
       setError(e instanceof z.ZodError ? e.issues[0]?.message ?? 'Revise los datos' : 'No se pudo guardar. Puede reintentar sin duplicar la recepción.');
     } finally { lock.current = false; setSaving(false); }
   };
+  const eliminar = async (r: Recepcion) => {
+    if (!window.confirm(`¿Eliminar la recepción ${r.numero}? También se eliminará su ficha técnica inicial.`)) return;
+    try {
+      await eliminarRecepcion(r.id);
+      setRecepciones(old => old.filter(x => x.id !== r.id));
+      if (guardada?.id === r.id) setGuardada(null);
+      toast({ title: 'Recepción eliminada', description: `${r.numero} y su ficha inicial fueron eliminadas.` });
+    } catch { toast({ title: 'Error', description: 'No se pudo eliminar la recepción.', variant: 'destructive' }); }
+  };
   const ver = async (r: Recepcion) => {
     try {
       const ficha = await getFichaById(r.ficha_id);
@@ -76,7 +85,7 @@ export default function RecepcionesPage() {
       <Button type="submit" disabled={saving}><Plus className="mr-2 h-4 w-4" />{saving ? 'Guardando...' : 'Guardar recepción'}</Button>
     </form>}
     <section><div className="flex flex-wrap justify-between items-center gap-4 mb-4"><h2 className="text-xl font-bold">Recepciones digitales</h2><div className="flex gap-3"><Input aria-label="Buscar recepción" placeholder="Buscar Nº de boleta" value={search} onChange={e => setSearch(e.target.value)} /><Select value={papel} onValueChange={v => setPapel(v as '80' | '58')}><SelectTrigger className="w-32" aria-label="Ancho de papel"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="80">Papel 80 mm</SelectItem><SelectItem value="58">Papel 58 mm</SelectItem></SelectContent></Select></div></div>
-      {loading ? <p>Cargando recepciones...</p> : !recepciones.length ? <p className="text-muted-foreground">Sin recepciones digitales registradas.</p> : <div className="divide-y divide-border">{recepciones.filter(r => r.numero.toLowerCase().includes(search.toLowerCase())).map(r => <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 py-4"><div><p className="font-bold">{r.numero}</p><p className="text-sm text-muted-foreground">{new Date(r.created_at).toLocaleString('es-CL')}</p></div><div className="flex gap-2"><Button variant="outline" onClick={() => ver(r)}><Eye className="mr-2 h-4 w-4" />Ver / reimprimir</Button><Button variant="outline" asChild><Link to={`/ficha-tecnica/${r.ficha_id}`}>Ficha técnica</Link></Button></div></div>)}</div>}
+      {loading ? <p>Cargando recepciones...</p> : !recepciones.length ? <p className="text-muted-foreground">Sin recepciones digitales registradas.</p> : <div className="divide-y divide-border">{recepciones.filter(r => r.numero.toLowerCase().includes(search.toLowerCase())).map(r => <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 py-4"><div><p className="font-bold">{r.numero}</p><p className="text-sm text-muted-foreground">{new Date(r.created_at).toLocaleString('es-CL')}</p></div><div className="flex gap-2"><Button variant="outline" onClick={() => ver(r)}><Eye className="mr-2 h-4 w-4" />Ver / reimprimir</Button><Button variant="outline" asChild><Link to={`/ficha-tecnica/${r.ficha_id}`}>Ficha técnica</Link></Button><Button variant="destructive" onClick={() => eliminar(r)}><Trash2 className="mr-2 h-4 w-4" />Eliminar</Button></div></div>)}</div>}
     </section>
     <Dialog open={!!preview} onOpenChange={open => { if (!open) setPreview(null); }}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>Boleta {preview?.numero}</DialogTitle></DialogHeader><iframe title="Vista previa de boleta" srcDoc={preview?.html} className="w-full h-[60vh] border border-border" sandbox="allow-same-origin" /><Button onClick={() => { if (!preview) return; try { imprimirBoleta(preview.html); } catch(e) { toast({ title: 'No se pudo imprimir', description: e instanceof Error ? e.message : 'La recepción sigue guardada.', variant: 'destructive' }); } }}><Printer className="mr-2 h-4 w-4" />Imprimir boleta</Button></DialogContent></Dialog>
   </main></div>;

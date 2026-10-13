@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -293,6 +293,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      eliminar_recepcion_digital: { Args: { _id: string }; Returns: undefined }
       get_ficha_publica: {
         Args: { _token: string }
         Returns: {
