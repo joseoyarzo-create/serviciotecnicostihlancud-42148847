@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      avisos_whatsapp: {
+        Row: {
+          cliente_nombre: string
+          created_at: string
+          enviado_at: string | null
+          error: string | null
+          estado: string
+          ficha_id: string
+          id: string
+          intentos: number
+          mensaje: string
+          modelo: string
+          telefono: string
+          updated_at: string
+        }
+        Insert: {
+          cliente_nombre?: string
+          created_at?: string
+          enviado_at?: string | null
+          error?: string | null
+          estado?: string
+          ficha_id: string
+          id?: string
+          intentos?: number
+          mensaje?: string
+          modelo?: string
+          telefono?: string
+          updated_at?: string
+        }
+        Update: {
+          cliente_nombre?: string
+          created_at?: string
+          enviado_at?: string | null
+          error?: string | null
+          estado?: string
+          ficha_id?: string
+          id?: string
+          intentos?: number
+          mensaje?: string
+          modelo?: string
+          telefono?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avisos_whatsapp_ficha_id_fkey"
+            columns: ["ficha_id"]
+            isOneToOne: true
+            referencedRelation: "fichas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clientes: {
         Row: {
           created_at: string
