@@ -46,7 +46,7 @@ export default function RecepcionesPage() {
       setGuardada(r); setRecepciones(old => [r, ...old.filter(x => x.id !== r.id)]);
       toast({ title: 'Recepción registrada', description: `${r.numero}: ficha técnica inicial creada.` });
     } catch (e) {
-      const msg = e instanceof z.ZodError ? e.issues[0]?.message ?? 'Revise los datos' : e instanceof Error && e.message.includes('ya existe') ? e.message : 'No se pudo guardar. Puede reintentar sin duplicar la recepción.';
+      const msg = e instanceof z.ZodError ? e.issues[0]?.message ?? 'Revise los datos' : String((e as { message?: string })?.message ?? '').includes('ya existe') ? (e as { message: string }).message : 'No se pudo guardar. Puede reintentar sin duplicar la recepción.';
       setError(msg);
     } finally { lock.current = false; setSaving(false); }
   };
